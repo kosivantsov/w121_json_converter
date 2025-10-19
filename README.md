@@ -4,7 +4,7 @@ A Java desktop utility to convert [The Word One to One](https://www.theword121.c
 
 This tool was created to provide a simple way to preview and proofread translated episodes outside of the official CMS.
 
-<img width="1680" height="1050" alt="image" src="https://github.com/user-attachments/assets/763f3334-2a0f-414f-affd-d4edbf8a16f0" />
+<img width="550" alt="Main App" src="https://github.com/user-attachments/assets/41548b41-2102-4a93-948f-8cfe0b013751" />
 
 
 ## Key Features
@@ -13,7 +13,10 @@ This tool was created to provide a simple way to preview and proofread translate
 -   **App String Injection**: If a `.txt` or `.json` file containing the mobile app's UI strings is provided, these elements (which are absent from the episode JSON) will be correctly inserted into the output. Otherwise, they are omitted.
 -   **Dual Output Formats**:
     -   **HTML**: Supports both light and dark modes for comfortable viewing.
+      <img width="600" alt="HTML Output" src="https://github.com/user-attachments/assets/92d4d285-016b-4397-93af-4c252fa72f05" />
+
     -   **DOCX**: Allows selection of a spell-checking language for easier proofreading in Microsoft Word and other editors.
+      <img width="600" alt="DOCX Output" src="https://github.com/user-attachments/assets/216426ab-54db-4a1e-8c5c-6d8b2e4e03fe" />
 -   **Flexible Output Location**: Save converted files to a specific folder or place them alongside the original input files.
 -   **Native Look and Feel**: The application includes several themes to integrate visually with different operating systems (Windows, macOS, Linux).
 
