@@ -45,8 +45,10 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     private final JComboBox<String> languageComboBox;
     private final JTextArea logArea;
     private final JComboBox<ThemeInfo> themeComboBox;
-    // CORRECTED: Added the new checkbox
     private final JCheckBox saveStringsAsJsonCheckbox;
+
+    // Added for conditional visibility
+    private final JLabel languageLabel;
 
     private Class<?> docxScriptClass;
     private Class<?> htmlScriptClass;
@@ -72,7 +74,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     public JsonConverterGui() {
         super(AppConfig.getAppTitle());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(750, 650); // Increased height for new checkbox
+        setSize(750, 650);
         setLayout(new BorderLayout(10, 10));
         
         lastUsedDirectory = prefs.get("lastUsedDirectory", System.getProperty("user.home"));
@@ -82,6 +84,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.LINE_START;
         
         ThemeInfo[] themes = {
             new ThemeInfo("Arc Light", "com.formdev.flatlaf.intellijthemes.FlatArcIJTheme"),
@@ -103,7 +106,8 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         };
         themeComboBox = new JComboBox<>(themes);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.LINE_START;
+        // Row 0: Conversion Format
+        gbc.gridx = 0; gbc.gridy = 0; 
         formPanel.add(new JLabel("Conversion Format:"), gbc);
         docxRadioButton = new JRadioButton("Convert to DOCX", true);
         htmlRadioButton = new JRadioButton("Convert to HTML");
@@ -117,49 +121,61 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         darkModeCheckbox = new JCheckBox("Dark Mode");
         gbc.gridx = 2;
         formPanel.add(darkModeCheckbox, gbc);
+        
+        // Row 1: "Convert all" checkbox
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 4;
+        processAllCheckbox = new JCheckBox("Convert all JSON files in the selected folder");
+        formPanel.add(processAllCheckbox, gbc);
+        gbc.gridwidth = 1; // Reset gridwidth
 
-        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Input:"), gbc);
+        // Row 2: Input
+        gbc.gridx = 0; gbc.gridy = 2; 
+        formPanel.add(new JLabel("Input:"), gbc);
         inputField = new JTextField(35);
         gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 2; formPanel.add(inputField, gbc);
         inputBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.weightx = 0; gbc.gridwidth = 1; formPanel.add(inputBrowseButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Strings File (Optional):"), gbc);
+        // Row 3: Strings File
+        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Strings File (Optional):"), gbc);
         stringsField = new JTextField(35);
         gbc.gridx = 1; gbc.gridwidth = 2; formPanel.add(stringsField, gbc);
         stringsBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(stringsBrowseButton, gbc);
         
-        // CORRECTED: Added the new checkbox for saving strings as JSON
+        // Row 4: Save strings checkbox
         saveStringsAsJsonCheckbox = new JCheckBox("Save the strings file in JSON");
-        gbc.gridx = 1; gbc.gridy = 3; gbc.gridwidth = 3; formPanel.add(saveStringsAsJsonCheckbox, gbc);
-        saveStringsAsJsonCheckbox.setVisible(false); // Initially hidden
+        gbc.gridx = 1; gbc.gridy = 4; gbc.gridwidth = 3; formPanel.add(saveStringsAsJsonCheckbox, gbc);
+        saveStringsAsJsonCheckbox.setVisible(false);
 
-        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Output:"), gbc);
+        // Row 5: Specify output checkbox
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 4;
+        enableOutputCheckbox = new JCheckBox("Specify output folder (otherwise, output is saved next to input)");
+        formPanel.add(enableOutputCheckbox, gbc);
+        gbc.gridwidth = 1; // Reset gridwidth
+
+        // Row 6: Output
+        gbc.gridx = 0; gbc.gridy = 6; formPanel.add(new JLabel("Output:"), gbc);
         outputField = new JTextField(35);
         gbc.gridx = 1; gbc.gridwidth = 2; formPanel.add(outputField, gbc);
         outputBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(outputBrowseButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; formPanel.add(new JLabel("Language:"), gbc);
+        // Row 7: Language
+        gbc.gridx = 0; gbc.gridy = 7;
+        languageLabel = new JLabel("Language:");
+        formPanel.add(languageLabel, gbc);
         String[] languages = { "af-ZA", "am-ET", "ar-SA", "as-IN", "az-Latn-AZ", "be-BY", "bg-BG", "bn-IN", "bs-Latn-BA", "ca-ES", "cs-CZ", "cy-GB", "da-DK", "de-DE", "el-GR", "en-GB", "en-US", "es-ES", "es-MX", "et-EE", "eu-ES", "fa-IR", "fi-FI", "fil-PH", "fr-CA", "fr-FR", "ga-IE", "gd-GB", "gl-ES", "gu-IN", "ha-Latn-NG", "he-IL", "hi-IN", "hr-HR", "hu-HU", "hy-AM", "id-ID", "ig-NG", "is-IS", "it-IT", "ja-JP", "ka-GE", "kk-KZ", "km-KH", "kn-IN", "ko-KR", "kok-IN", "ku-Arab-IQ", "ky-KG", "lb-LU", "lo-LA", "lt-LT", "lv-LV", "mi-NZ", "mk-MK", "ml-IN", "mn-MN", "mr-IN", "ms-MY", "mt-MT", "nb-NO", "ne-NP", "nl-NL", "nn-NO", "nso-ZA", "or-IN", "pa-IN", "pl-PL", "prs-AF", "pt-BR", "pt-PT", "quc-Latn-GT", "quz-PE", "ro-RO", "ru-RU", "rw-RW", "sd-Arab-PK", "si-LK", "sk-SK", "sl-SI", "sq-AL", "sr-Cyrl-BA", "sr-Cyrl-RS", "sr-Latn-RS", "sv-SE", "sw-KE", "ta-IN", "te-IN", "tg-Cyrl-TJ", "th-TH", "ti-ET", "tk-TM", "tn-ZA", "tr-TR", "tt-RU", "ug-CN", "uk-UA", "ur-PK", "uz-Latn-UZ", "vi-VN", "wo-SN", "xh-ZA", "yo-NG", "zh-CN", "zh-TW", "zu-ZA"};
         languageComboBox = new JComboBox<>(languages);
         languageComboBox.setEditable(true);
         languageComboBox.setSelectedItem("en-GB");
         gbc.gridx = 1; gbc.gridwidth = 3; formPanel.add(languageComboBox, gbc);
-        
-        processAllCheckbox = new JCheckBox("Convert all JSON files in the folder");
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 4; formPanel.add(processAllCheckbox, gbc);
-        
-        enableOutputCheckbox = new JCheckBox("Specify output folder (otherwise, output is saved next to input)");
-        gbc.gridy = 7; formPanel.add(enableOutputCheckbox, gbc);
 
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane logScrollPane = new JScrollPane(logArea);
         runButton = new JButton("Run Conversion");
-        // CORRECTED: Button size updated
         runButton.setPreferredSize(new Dimension(500, runButton.getPreferredSize().height + 4));
 
         JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
@@ -184,7 +200,6 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         setupGroovyScripts();
         loadAppIcon();
         
-        // CORRECTED: Added DocumentListener to dynamically show/hide the new checkbox
         stringsField.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e) { update(); }
             public void removeUpdate(DocumentEvent e) { update(); }
@@ -193,6 +208,17 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
                 saveStringsAsJsonCheckbox.setVisible(stringsField.getText().trim().toLowerCase().endsWith(".txt"));
             }
         });
+        
+        Runnable updateLanguageFieldVisibility = () -> {
+            boolean isDocx = docxRadioButton.isSelected();
+            languageLabel.setVisible(isDocx);
+            languageComboBox.setVisible(isDocx);
+            darkModeCheckbox.setVisible(!isDocx);
+        };
+        
+        htmlRadioButton.addActionListener(e -> updateLanguageFieldVisibility.run());
+        docxRadioButton.addActionListener(e -> updateLanguageFieldVisibility.run());
+        updateLanguageFieldVisibility.run(); // Initial setup
 
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_ABOUT)) {
@@ -234,10 +260,6 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         if (!themeSet) {
              themeComboBox.setSelectedIndex(0);
         }
-
-        htmlRadioButton.addActionListener(e -> darkModeCheckbox.setVisible(true));
-        docxRadioButton.addActionListener(e -> darkModeCheckbox.setVisible(false));
-        darkModeCheckbox.setVisible(false);
 
         processAllCheckbox.addActionListener(e -> updateFileChooserBehavior());
         enableOutputCheckbox.addActionListener(e -> updateOutputBrowseEnabled());
@@ -455,7 +477,6 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         }
     }
     
-    // CORRECTED: Updated the conversion logic to handle the new checkbox
     private void runConversion() {
         runButton.setEnabled(false);
         logArea.setText("");
@@ -487,12 +508,10 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
 
                     File outputFile;
                     if (saveStrings) {
-                        // Save permanently next to the source .txt file
                         String jsonOutputPath = FilenameUtils.removeExtension(initialStringsPath) + ".json";
                         outputFile = new File(jsonOutputPath);
                         log("Saving converted strings to: " + outputFile.getName());
                     } else {
-                        // Use a temporary file
                         outputFile = File.createTempFile("temp_strings_", ".json");
                         outputFile.deleteOnExit();
                         log("Using temporary strings JSON: " + outputFile.getName());
