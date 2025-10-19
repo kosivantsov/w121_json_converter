@@ -70,7 +70,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     }
 
     public JsonConverterGui() {
-        super("JSON Conversion Tool");
+        super(AppConfig.getAppTitle());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(750, 650); // Increased height for new checkbox
         setLayout(new BorderLayout(10, 10));
@@ -95,7 +95,6 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             new ThemeInfo("Gradianto Deep Ocean", "com.formdev.flatlaf.intellijthemes.FlatGradiantoDeepOceanIJTheme"),
             new ThemeInfo("Gruvbox Dark Hard", "com.formdev.flatlaf.intellijthemes.FlatGruvboxDarkHardIJTheme"),
             new ThemeInfo("Light Owl", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatLightOwlIJTheme"),
-            new ThemeInfo("Material Darker", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTMaterialDarkerIJTheme"),
             new ThemeInfo("Monocai", "com.formdev.flatlaf.intellijthemes.FlatMonocaiIJTheme"),
             new ThemeInfo("Nord", "com.formdev.flatlaf.intellijthemes.FlatNordIJTheme"),
             new ThemeInfo("One Dark", "com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme"),

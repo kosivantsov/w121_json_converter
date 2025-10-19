@@ -1,4 +1,5 @@
 import org.panteleyev.jpackage.ImageType
+import org.apache.tools.ant.taskdefs.condition.Os
 
 plugins {
     id 'java'
@@ -49,7 +50,7 @@ dependencies {
 application {
     mainClass = 'JsonConverterGui'
     applicationDefaultJvmArgs = [
-        "-Dapple.awt.application.name=The Word 121 Json Converter",
+        "-Dapple.awt.application.name=The Word121 JSON Converter",
         "-Dapple.awt.application.appearance=system"
     ]
 }
@@ -68,6 +69,16 @@ shadowJar {
     }
 }
 
+task generateConfig {
+    doLast {
+        def configFile = new File("$buildDir/resources/main/config.properties")
+        configFile.parentFile.mkdirs()
+        def appTitle = jpackage.appName.get()
+        configFile.text = "app.title=${appTitle}"
+    }
+}
+processResources.dependsOn generateConfig
+
 sourceSets {
     main {
         java { srcDirs = ['src/main/java'] }
@@ -78,62 +89,70 @@ sourceSets {
 jpackage {
     dependsOn(shadowJar)
 
-    // --- Core Settings (Common to all platforms) ---
+    // --- Core Settings ---
     mainJar = shadowJar.archiveFile.get().asFile.name
     mainClass = application.mainClass.get()
     input = layout.buildDirectory.dir("libs")
     destination = layout.buildDirectory.dir('jpackage')
 
-    // --- App Metadata (Common to all platforms) ---
-    appName = 'The Word 121 Json Converter'
+    // --- App Metadata ---
+    appName = 'The Word121 JSON Converter'
     appVersion = project.version
     vendor = 'Kos Ivantsov | https://truetranslation.org'
     description = 'A tool for converting JSON files.'
     copyright = "Copyright (c) 2025, Kos Ivantsov"
 
+    // --- JVM Options ---
     javaOptions.add("-Dapple.awt.application.appearance=system")
-    javaOptions.add('-Xdock:icon=$APPDIR/JsonConverter.icns')
-    javaOptions.add("-Dapple.awt.application.name=The Word 121 Json Converter")
+    javaOptions.add("-Dapple.awt.application.name=The Word121 JSON Converter")
+    javaOptions.add('-Xdock:icon=$APPDIR/The Word121 JSON Converter.icns')
 
     // --- Platform-Specific Configuration ---
-    if (project.hasProperty('os.name')) {
-        def os = project.property('os.name').toString().toLowerCase()
+    if (Os.isFamily(Os.FAMILY_MAC)) {
+        type = ImageType.APP_IMAGE
+        icon = file('src/main/resources/The Word121 JSON Converter.icns')
         
-        // CORRECTED: Added 'darwin' check for robust macOS detection
-        if (os.contains('mac') || os.contains('darwin')) {
-            // -- macOS Settings --
-            type = ImageType.APP_IMAGE
-            resourceDir = file('src/main/resources')
-            icon = project.file('src/main/resources/JsonConverter.icns').absolutePath
-            mac {
-                packageIdentifier = 'org.truetranslation.w121jsonconverter'
-            }
+        // **CORRECTION HERE: Set macOS properties directly on the task**
+        macPackageIdentifier = 'org.truetranslation.w121jsonconverter'
 
-        } else if (os.contains('win')) {
-            // -- Windows Settings --
-            type = ImageType.APP_IMAGE
-            icon = project.file('src/main/resources/JsonConverter.ico').absolutePath
-            win {
-                menu = false
-                shortcut = false
-            }
+    } else if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        type = ImageType.APP_IMAGE
+        icon = file('src/main/resources/The Word121 JSON Converter.ico')
+        
+        // Windows-specific properties like winMenu or winShortcut would go here
+        // e.g., winMenu = false
+        
+    } else {
+        type = ImageType.DEB
+        icon = file('src/main/resources/The Word121 JSON Converter.png')
+        
+        // Linux-specific properties like linuxPackageName would go here
+        // e.g., linuxPackageName = 'w121-json-converter'
+    }
+    
+    addModules = ['java.base', 'java.desktop', 'java.prefs', 'java.logging']
 
-        } else {
-            // -- Linux Settings (Defaults to .deb package) --
-            type = ImageType.DEB
-            icon = project.file('src/main/resources/JsonConverter.png').absolutePath
-            linux {
-                packageName = 'w121-json-converter'
-                packageDescription = 'A tool for converting JSON files.'
-                maintainer = 'Kos Ivantsov <contact@truetranslation.org>'
-                appCategory = 'Utility'
+    // Post-processing task to forcibly overwrite the icon
+    doLast {
+        if (Os.isFamily(Os.FAMILY_MAC)) {
+            println ">>> Forcibly overwriting macOS app icon."
+            def appNameValue = jpackage.appName.get()
+            def sourceIconFile = file("src/main/resources/${appNameValue}.icns")
+            def destIconFile = file("${destination.get().asFile}/${appNameValue}.app/Contents/Resources/${appNameValue}.icns")
+
+            if (sourceIconFile.exists()) {
+                copy {
+                    from sourceIconFile
+                    into destIconFile.getParentFile()
+                    rename { String fileName ->
+                        destIconFile.name
+                    }
+                    fileMode = 0755
+                }
+                println ">>> Successfully replaced icon at: ${destIconFile}"
+            } else {
+                println ">>> WARNING: Source icon not found at ${sourceIconFile}. Cannot replace app icon."
             }
         }
-    } else {
-        // Fallback for unknown OS
-        type = ImageType.APP_IMAGE
     }
-
-    // --- Included Java Modules (Common to all platforms) ---
-    addModules = ['java.base', 'java.desktop', 'java.prefs', 'java.logging']
 }

@@ -25,7 +25,7 @@ jobs:
 
       - name: Install WiX Toolset
         if: runner.os == 'Windows'
-        run: choco install wixtoolset
+        run: choco install wixtoolset --version=3.14.0 -y
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
@@ -41,7 +41,7 @@ jobs:
       - name: Post-process Windows Config
         if: runner.os == 'Windows'
         run: |
-          $appDir = "build/jpackage/The Word 121 Json Converter/app"
+          $appDir = "build/jpackage/The Word121 JSON Converter/app"
           $configFile = Get-ChildItem -Path $appDir -Filter "*.cfg" | Select-Object -First 1
           if ($configFile) {
             Write-Host "Processing config file: $($configFile.FullName)"
@@ -55,21 +55,27 @@ jobs:
       - name: List Build Outputs
         run: ls -R build/jpackage
 
-      # CORRECTED: This section is now streamlined to avoid the double-zip issue.
-      # We REMOVE the manual zip step and point the upload action directly to the .app directory.
+      # **MODIFICATION FOR MACOS**
+      - name: Create macOS Release ZIP
+        if: runner.os == 'macOS'
+        run: |
+          cd build/jpackage
+          zip -r ../JsonConverter-macOS.zip ./*.app
+          cd ../..
+      
       - name: Upload macOS Artifact
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: JsonConverter-macOS
-          path: build/jpackage/The Word 121 Json Converter.app
+          path: build/JsonConverter-macOS.zip
 
       - name: Upload Windows Artifact (folder)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: JsonConverter-Windows
-          path: build/jpackage/The Word 121 Json Converter/
+          path: build/jpackage/The Word121 JSON Converter/
 
       - name: Upload Linux Artifact (.deb)
         if: runner.os == 'Linux'

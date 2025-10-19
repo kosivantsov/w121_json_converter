@@ -2,11 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- App Name for Menus and Dialogs -->
+    <!-- App Name and Icon for Menus and Dialogs -->
     <key>CFBundleDisplayName</key>
     <string>The Word 121 Json Converter</string>
     <key>CFBundleName</key>
     <string>The Word 121 Json Converter</string>
+    <key>CFBundleIconFile</key>
+    <string>The Word121 JSON Converter.icns</string>
 
     <!-- Version and Copyright for About Dialog -->
     <key>CFBundleShortVersionString</key>
