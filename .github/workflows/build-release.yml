@@ -31,26 +31,38 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           
+      # CORRECTED (Linux): Install required Debian packaging tools before building
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot
+
       # Step 3: Make the Gradle wrapper executable (for Linux and macOS)
       - name: Make gradlew executable
         if: runner.os != 'Windows'
         run: chmod +x ./gradlew
 
       # Step 4: Run the jpackage build task
-      # The build.gradle script will automatically detect the OS and build the correct package type.
       - name: Build application with Gradle
         run: ./gradlew jpackage
 
+      # CORRECTED (macOS): Manually zip the .app bundle to preserve its structure
+      - name: Zip macOS Artifact
+        if: runner.os == 'macOS'
+        # The working directory is set to where the .app is created
+        working-directory: ./build/jpackage
+        # Create a zip file named after the app
+        run: zip -r "The Word 121 Json Converter.app.zip" "The Word 121 Json Converter.app"
+
       # Step 5: Upload the build artifacts
-      # We use 'if' conditions to handle the different output paths for each OS.
-      - name: Upload macOS Artifact (.app)
+      # The paths are now updated to reflect the manual zipping on macOS.
+      - name: Upload macOS Artifact (.app.zip)
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: JsonConverter-macOS
-          path: build/jpackage/The Word 121 Json Converter.app
+          path: build/jpackage/The Word 121 Json Converter.app.zip
 
-      - name: Upload Windows Artifact (.exe folder)
+      - name: Upload Windows Artifact (folder)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:

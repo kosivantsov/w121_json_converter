@@ -90,20 +90,21 @@ jpackage {
     description = 'A tool for converting JSON files.'
     copyright = "Copyright (c) 2025, Kos Ivantsov"
 
-    javaOptions.add("-Dapple.awt.application.appearance=system")
-    javaOptions.add('-Xdock:icon=$APPDIR/JsonConverter.icns')
-    javaOptions.add("-Dapple.awt.application.name=The Word 121 Json Converter")
-
     // --- Platform-Specific Configuration ---
     if (project.hasProperty('os.name')) {
         def os = project.property('os.name').toString().toLowerCase()
         
-        // CORRECTED: Added 'darwin' check for robust macOS detection
         if (os.contains('mac') || os.contains('darwin')) {
             // -- macOS Settings --
             type = ImageType.APP_IMAGE
-            resourceDir = file('src/main/resources')
+            resourceDir = file('src/main/resources') // For Info.plist
             icon = project.file('src/main/resources/JsonConverter.icns').absolutePath
+            
+            // CORRECTED: All macOS-specific JVM options are now strictly inside this block
+            javaOptions.add("-Dapple.awt.application.appearance=system")
+            javaOptions.add('-Xdock:icon=$APPDIR/JsonConverter.icns')
+            javaOptions.add("-Dapple.awt.application.name=The Word 121 Json Converter")
+
             mac {
                 packageIdentifier = 'org.truetranslation.w121jsonconverter'
             }
