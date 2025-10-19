@@ -34,13 +34,19 @@ jobs:
       - name: Build application with Gradle
         run: ./gradlew jpackage
         
-      # CORRECTED (Windows): Remove macOS-specific flags from the Windows config file
+      # CORRECTED: This robust script finds the .cfg file and safely removes the macOS flags.
       - name: Post-process Windows Config
         if: runner.os == 'Windows'
-        # This script finds the app.cfg file and removes lines containing '-Dapple' or '-Xdock'
         run: |
-          $configFile = Get-ChildItem -Path "build/jpackage" -Filter "app.cfg" -Recurse
-          (Get-Content $configFile.FullName) | Where-Object { $_ -notmatch "-Dapple" -and $_ -notmatch "-Xdock" } | Set-Content $configFile.FullName
+          $appDir = "build/jpackage/The Word 121 Json Converter/app"
+          $configFile = Get-ChildItem -Path $appDir -Filter "*.cfg" | Select-Object -First 1
+          if ($configFile) {
+            Write-Host "Processing config file: $($configFile.FullName)"
+            (Get-Content $configFile.FullName) | Where-Object { $_ -notmatch "-Dapple" -and $_ -notmatch "-Xdock" } | Set-Content $configFile.FullName
+            Write-Host "Successfully removed macOS-specific options."
+          } else {
+            Write-Host "Warning: No .cfg file found in $appDir. Skipping post-processing."
+          }
         shell: powershell
 
       - name: Zip macOS Artifact
