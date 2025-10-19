@@ -4,6 +4,8 @@ import com.google.gson.GsonBuilder;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.Taskbar;
@@ -43,6 +45,8 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     private final JComboBox<String> languageComboBox;
     private final JTextArea logArea;
     private final JComboBox<ThemeInfo> themeComboBox;
+    // CORRECTED: Added the new checkbox
+    private final JCheckBox saveStringsAsJsonCheckbox;
 
     private Class<?> docxScriptClass;
     private Class<?> htmlScriptClass;
@@ -68,7 +72,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     public JsonConverterGui() {
         super("JSON Conversion Tool");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(750, 620);
+        setSize(750, 650); // Increased height for new checkbox
         setLayout(new BorderLayout(10, 10));
         
         lastUsedDirectory = prefs.get("lastUsedDirectory", System.getProperty("user.home"));
@@ -91,7 +95,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             new ThemeInfo("Gradianto Deep Ocean", "com.formdev.flatlaf.intellijthemes.FlatGradiantoDeepOceanIJTheme"),
             new ThemeInfo("Gruvbox Dark Hard", "com.formdev.flatlaf.intellijthemes.FlatGruvboxDarkHardIJTheme"),
             new ThemeInfo("Light Owl", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatLightOwlIJTheme"),
-            new ThemeInfo("Material Darker", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDarkerIJTheme"),
+            new ThemeInfo("Material Darker", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMTMaterialDarkerIJTheme"),
             new ThemeInfo("Monocai", "com.formdev.flatlaf.intellijthemes.FlatMonocaiIJTheme"),
             new ThemeInfo("Nord", "com.formdev.flatlaf.intellijthemes.FlatNordIJTheme"),
             new ThemeInfo("One Dark", "com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme"),
@@ -127,13 +131,18 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         stringsBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(stringsBrowseButton, gbc);
         
-        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Output:"), gbc);
+        // CORRECTED: Added the new checkbox for saving strings as JSON
+        saveStringsAsJsonCheckbox = new JCheckBox("Save the strings file in JSON");
+        gbc.gridx = 1; gbc.gridy = 3; gbc.gridwidth = 3; formPanel.add(saveStringsAsJsonCheckbox, gbc);
+        saveStringsAsJsonCheckbox.setVisible(false); // Initially hidden
+
+        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Output:"), gbc);
         outputField = new JTextField(35);
         gbc.gridx = 1; gbc.gridwidth = 2; formPanel.add(outputField, gbc);
         outputBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(outputBrowseButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Language:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 5; formPanel.add(new JLabel("Language:"), gbc);
         String[] languages = { "af-ZA", "am-ET", "ar-SA", "as-IN", "az-Latn-AZ", "be-BY", "bg-BG", "bn-IN", "bs-Latn-BA", "ca-ES", "cs-CZ", "cy-GB", "da-DK", "de-DE", "el-GR", "en-GB", "en-US", "es-ES", "es-MX", "et-EE", "eu-ES", "fa-IR", "fi-FI", "fil-PH", "fr-CA", "fr-FR", "ga-IE", "gd-GB", "gl-ES", "gu-IN", "ha-Latn-NG", "he-IL", "hi-IN", "hr-HR", "hu-HU", "hy-AM", "id-ID", "ig-NG", "is-IS", "it-IT", "ja-JP", "ka-GE", "kk-KZ", "km-KH", "kn-IN", "ko-KR", "kok-IN", "ku-Arab-IQ", "ky-KG", "lb-LU", "lo-LA", "lt-LT", "lv-LV", "mi-NZ", "mk-MK", "ml-IN", "mn-MN", "mr-IN", "ms-MY", "mt-MT", "nb-NO", "ne-NP", "nl-NL", "nn-NO", "nso-ZA", "or-IN", "pa-IN", "pl-PL", "prs-AF", "pt-BR", "pt-PT", "quc-Latn-GT", "quz-PE", "ro-RO", "ru-RU", "rw-RW", "sd-Arab-PK", "si-LK", "sk-SK", "sl-SI", "sq-AL", "sr-Cyrl-BA", "sr-Cyrl-RS", "sr-Latn-RS", "sv-SE", "sw-KE", "ta-IN", "te-IN", "tg-Cyrl-TJ", "th-TH", "ti-ET", "tk-TM", "tn-ZA", "tr-TR", "tt-RU", "ug-CN", "uk-UA", "ur-PK", "uz-Latn-UZ", "vi-VN", "wo-SN", "xh-ZA", "yo-NG", "zh-CN", "zh-TW", "zu-ZA"};
         languageComboBox = new JComboBox<>(languages);
         languageComboBox.setEditable(true);
@@ -141,25 +150,24 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         gbc.gridx = 1; gbc.gridwidth = 3; formPanel.add(languageComboBox, gbc);
         
         processAllCheckbox = new JCheckBox("Convert all JSON files in the folder");
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 4; formPanel.add(processAllCheckbox, gbc);
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 4; formPanel.add(processAllCheckbox, gbc);
         
         enableOutputCheckbox = new JCheckBox("Specify output folder (otherwise, output is saved next to input)");
-        gbc.gridy = 6; formPanel.add(enableOutputCheckbox, gbc);
+        gbc.gridy = 7; formPanel.add(enableOutputCheckbox, gbc);
 
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane logScrollPane = new JScrollPane(logArea);
         runButton = new JButton("Run Conversion");
+        // CORRECTED: Button size updated
         runButton.setPreferredSize(new Dimension(500, runButton.getPreferredSize().height + 4));
-        
-        // --- Bottom Panel Setup ---
+
         JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
         
         JPanel runPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         runPanel.add(runButton);
         
-        // CORRECTED: Changed the settings panel layout to FlowLayout.CENTER
         JPanel settingsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
         settingsPanel.add(new JLabel("Theme:"));
         settingsPanel.add(themeComboBox);
@@ -176,8 +184,21 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
 
         setupGroovyScripts();
         loadAppIcon();
+        
+        // CORRECTED: Added DocumentListener to dynamically show/hide the new checkbox
+        stringsField.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) { update(); }
+            public void removeUpdate(DocumentEvent e) { update(); }
+            public void insertUpdate(DocumentEvent e) { update(); }
+            public void update() {
+                saveStringsAsJsonCheckbox.setVisible(stringsField.getText().trim().toLowerCase().endsWith(".txt"));
+            }
+        });
 
         try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_ABOUT)) {
+                Desktop.getDesktop().setAboutHandler(this);
+            }
             if (Taskbar.isTaskbarSupported()) {
                 Taskbar taskbar = Taskbar.getTaskbar();
                 if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
@@ -190,11 +211,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
                 }
             }
         } catch (Exception e) {
-            log("Warning: Could not set Dock icon. " + e.getMessage());
-        }
-
-        if (Desktop.isDesktopSupported()) {
-            Desktop.getDesktop().setAboutHandler(this);
+            log("Warning: Could not set platform-specific integration. " + e.getMessage());
         }
 
         themeComboBox.addActionListener(e -> {
@@ -439,6 +456,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         }
     }
     
+    // CORRECTED: Updated the conversion logic to handle the new checkbox
     private void runConversion() {
         runButton.setEnabled(false);
         logArea.setText("");
@@ -446,6 +464,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
 
         final String inputPath = inputField.getText().trim();
         final String initialStringsPath = stringsField.getText().trim();
+        final boolean saveStrings = saveStringsAsJsonCheckbox.isSelected();
         final String lang = (String) languageComboBox.getSelectedItem();
         final boolean isBatchMode = processAllCheckbox.isSelected();
         final boolean isHtmlMode = htmlRadioButton.isSelected();
@@ -467,14 +486,23 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
                     String txtContent = new String(Files.readAllBytes(Paths.get(initialStringsPath)), StandardCharsets.UTF_8);
                     String jsonContent = guitxtToJson(txtContent);
 
-                    File tempFile = File.createTempFile("temp_strings_", ".json");
-                    tempFile.deleteOnExit();
-
-                    try (Writer writer = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+                    File outputFile;
+                    if (saveStrings) {
+                        // Save permanently next to the source .txt file
+                        String jsonOutputPath = FilenameUtils.removeExtension(initialStringsPath) + ".json";
+                        outputFile = new File(jsonOutputPath);
+                        log("Saving converted strings to: " + outputFile.getName());
+                    } else {
+                        // Use a temporary file
+                        outputFile = File.createTempFile("temp_strings_", ".json");
+                        outputFile.deleteOnExit();
+                        log("Using temporary strings JSON: " + outputFile.getName());
+                    }
+                    
+                    try (Writer writer = new FileWriter(outputFile, StandardCharsets.UTF_8)) {
                         writer.write(jsonContent);
                     }
-                    effectiveStringsPath = tempFile.getAbsolutePath();
-                    log("Temporary strings JSON created at: " + tempFile.getName());
+                    effectiveStringsPath = outputFile.getAbsolutePath();
                 }
 
                 if (isBatchMode) {

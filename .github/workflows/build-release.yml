@@ -22,7 +22,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          
+
+      # CORRECTED: Install the WiX Toolset, which is required by jpackage for Windows builds
+      - name: Install WiX Toolset
+        if: runner.os == 'Windows'
+        run: choco install wixtoolset --version=3.11.2
+
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y build-essential fakeroot
@@ -34,7 +39,6 @@ jobs:
       - name: Build application with Gradle
         run: ./gradlew jpackage
         
-      # CORRECTED: This robust script finds the .cfg file and safely removes the macOS flags.
       - name: Post-process Windows Config
         if: runner.os == 'Windows'
         run: |

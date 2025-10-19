@@ -14,7 +14,7 @@ class JsonToHtmlScript {
     void run() {
         def data
         try {
-            data = new JsonSlurper().parse(new File(inputPath))
+            data = new JsonSlurper().parse(new File(inputPath).newReader("UTF-8"))
         } catch (Exception e) {
             // Errors will be caught and logged by the Java GUI
             throw new RuntimeException("Error loading input JSON: ${e.message}", e)
@@ -24,7 +24,7 @@ class JsonToHtmlScript {
         String html = buildHtml(data, strings, darkMode)
 
         try {
-            new File(outputPath).text = html
+            new File(outputPath).write(html, 'UTF-8')
         } catch (Exception e) {
             throw new RuntimeException("Error writing output HTML: ${e.message}", e)
         }
@@ -34,7 +34,7 @@ class JsonToHtmlScript {
         if (path == null || path.trim().isEmpty()) return [:]
         try {
             def file = new File(path)
-            return file.exists() ? new JsonSlurper().parse(file) : [:]
+            return file.exists() ? new JsonSlurper().parse(file.newReader("UTF-8")) : [:]
         } catch(Exception e) {
             println("Warning: Could not load strings file at ${path}. Proceeding without it.")
             return [:]
