@@ -4,7 +4,8 @@ A Java desktop utility to convert [The Word One to One](https://www.theword121.c
 
 This tool was created to provide a simple way to preview and proofread translated episodes outside of the official CMS.
 
-<!-- It's highly recommended to add a screenshot of your app here. -->
+<img width="1680" height="1050" alt="image" src="https://github.com/user-attachments/assets/763f3334-2a0f-414f-affd-d4edbf8a16f0" />
+
 
 ## Key Features
 
