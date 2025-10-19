@@ -23,8 +23,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # CORRECTED: Removed the version pin to make the install command robust.
-      # This ensures WiX is present without causing an error if a newer version already exists.
       - name: Install WiX Toolset
         if: runner.os == 'Windows'
         run: choco install wixtoolset
@@ -53,21 +51,18 @@ jobs:
             Write-Host "Warning: No .cfg file found in $appDir. Skipping post-processing."
           }
         shell: powershell
-
-      - name: Zip macOS Artifact
-        if: runner.os == 'macOS'
-        working-directory: ./build/jpackage
-        run: zip -r "The Word 121 Json Converter.app.zip" "The Word 121 Json Converter.app"
         
       - name: List Build Outputs
         run: ls -R build/jpackage
 
-      - name: Upload macOS Artifact (.app.zip)
+      # CORRECTED: This section is now streamlined to avoid the double-zip issue.
+      # We REMOVE the manual zip step and point the upload action directly to the .app directory.
+      - name: Upload macOS Artifact
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: JsonConverter-macOS
-          path: build/jpackage/The Word 121 Json Converter.app.zip
+          path: build/jpackage/The Word 121 Json Converter.app
 
       - name: Upload Windows Artifact (folder)
         if: runner.os == 'Windows'
