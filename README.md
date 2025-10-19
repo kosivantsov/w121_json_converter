@@ -66,7 +66,7 @@ To build the project yourself, you will need:
     cd w121_json_converter
     ```
 
-2.  **Build the application using the Gradle wrapper:**
+2.  **Build the cross-platform JAR using the Gradle wrapper:**
     -   On macOS/Linux:
         ```
         ./gradlew shadowJar
@@ -77,6 +77,18 @@ To build the project yourself, you will need:
         ```
 
     The runnable JAR file will be located at `build/libs/JsonConverter-1.0.jar`.
+    
+3.  **Build an application bundle for your operating system using the Gradle wrapper:**
+    -  On macOS/Linux:
+       ```
+       ./gradlew jpackage
+       ```
+    -  On Windows:
+       ```
+       gradlew.bat jpackage
+       ```
+       
+    The compiled application will be located at `build/jpackage/`.
 
 ## Legal Notice
 
