@@ -23,9 +23,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # **CORRECTION: The WiX Toolset install step has been completely removed.**
-      # The Windows runner image has WiX pre-installed, making this step unnecessary and a source of errors.
-
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y build-essential fakeroot
@@ -54,11 +51,12 @@ jobs:
       - name: List Build Outputs
         run: ls -R build/jpackage
 
+      # **MODIFICATION FOR MACOS**
       - name: Create macOS Release ZIP
         if: runner.os == 'macOS'
         run: |
           cd build/jpackage
-          zip -r ../JsonConverter-macOS.zip ./*.app
+          zip -r ../JsonConverter-macOS.zip ./* -x "*.DS_Store"
           cd ../..
       
       - name: Upload macOS Artifact
