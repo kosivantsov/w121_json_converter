@@ -23,9 +23,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install WiX Toolset
+      # **MODIFICATION FOR WINDOWS**
+      - name: Install WiX Toolset (if not present)
         if: runner.os == 'Windows'
-        run: choco install wixtoolset --version=3.14.0 -y
+        run: |
+          if (choco list --local-only | Select-String -Pattern 'wixtoolset' -Quiet) {
+            Write-Host 'WiX Toolset is already installed.'
+          } else {
+            choco install wixtoolset --version=3.14.0 -y
+          }
+        shell: powershell
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
@@ -35,8 +42,9 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x ./gradlew
 
+      # **MODIFICATION TO PREVENT CANCELLATION**
       - name: Build application with Gradle
-        run: ./gradlew jpackage
+        run: ./gradlew jpackage --no-daemon
         
       - name: Post-process Windows Config
         if: runner.os == 'Windows'
@@ -55,7 +63,6 @@ jobs:
       - name: List Build Outputs
         run: ls -R build/jpackage
 
-      # **MODIFICATION FOR MACOS**
       - name: Create macOS Release ZIP
         if: runner.os == 'macOS'
         run: |
