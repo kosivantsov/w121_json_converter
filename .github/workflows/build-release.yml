@@ -23,10 +23,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # CORRECTED: Install the WiX Toolset, which is required by jpackage for Windows builds
+      # CORRECTED: Removed the version pin to make the install command robust.
+      # This ensures WiX is present without causing an error if a newer version already exists.
       - name: Install WiX Toolset
         if: runner.os == 'Windows'
-        run: choco install wixtoolset --version=3.11.2
+        run: choco install wixtoolset
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
