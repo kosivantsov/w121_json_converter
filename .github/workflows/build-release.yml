@@ -1,0 +1,65 @@
+# GitHub Action for building cross-platform releases
+name: Build Cross-Platform Releases
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  # Triggers the workflow when a push is made to the main branch
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # This is the core of the cross-platform strategy.
+    # It creates a matrix of jobs, one for each OS.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    # Each job in the matrix runs on the specified OS.
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # Step 1: Check out your repository's code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Java JDK 17 for the build
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      # Step 3: Make the Gradle wrapper executable (for Linux and macOS)
+      - name: Make gradlew executable
+        if: runner.os != 'Windows'
+        run: chmod +x ./gradlew
+
+      # Step 4: Run the jpackage build task
+      # The build.gradle script will automatically detect the OS and build the correct package type.
+      - name: Build application with Gradle
+        run: ./gradlew jpackage
+
+      # Step 5: Upload the build artifacts
+      # We use 'if' conditions to handle the different output paths for each OS.
+      - name: Upload macOS Artifact (.app)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: JsonConverter-macOS
+          path: build/jpackage/The Word 121 Json Converter.app
+
+      - name: Upload Windows Artifact (.exe folder)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: JsonConverter-Windows
+          path: build/jpackage/The Word 121 Json Converter/
+
+      - name: Upload Linux Artifact (.deb)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: JsonConverter-Linux-DEB
+          path: build/jpackage/*.deb
