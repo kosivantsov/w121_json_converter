@@ -77,35 +77,62 @@ sourceSets {
 jpackage {
     dependsOn(shadowJar)
 
-    // --- Core Settings ---
+    // --- Core Settings (Common to all platforms) ---
     mainJar = shadowJar.archiveFile.get().asFile.name
     mainClass = application.mainClass.get()
-    type = ImageType.APP_IMAGE
     input = layout.buildDirectory.dir("libs")
     destination = layout.buildDirectory.dir('jpackage')
 
-    // --- App Metadata ---
+    // --- App Metadata (Common to all platforms) ---
     appName = 'The Word 121 Json Converter'
     appVersion = project.version
     vendor = 'Kos Ivantsov | https://truetranslation.org'
     description = 'A tool for converting JSON files.'
-    copyright = "Copyright (c) 2025, ${vendor}"
+    copyright = "Copyright (c) 2025, Kos Ivantsov"
 
-    // --- macOS Integration ---
-    resourceDir = file('src/main/resources')
     javaOptions.add("-Dapple.awt.application.appearance=system")
     javaOptions.add('-Xdock:icon=$APPDIR/JsonConverter.icns')
-     javaOptions.add('-Dapple.awt.application.name=The Word 121 Json Converter')
+    javaOptions.add("-Dapple.awt.application.name=The Word 121 Json Converter")
 
+    // --- Platform-Specific Configuration ---
+    if (project.hasProperty('os.name')) {
+        def os = project.property('os.name').toString().toLowerCase()
+        
+        // CORRECTED: Added 'darwin' check for robust macOS detection
+        if (os.contains('mac') || os.contains('darwin')) {
+            // -- macOS Settings --
+            type = ImageType.APP_IMAGE
+            resourceDir = file('src/main/resources')
+            icon = project.file('src/main/resources/JsonConverter.icns').absolutePath
+            mac {
+                packageIdentifier = 'org.truetranslation.w121jsonconverter'
+            }
 
-    if (project.hasProperty('os.name') && project.property('os.name').toString().toLowerCase().contains('mac')) {
-        icon = project.file('src/main/resources/JsonConverter.icns').absolutePath
-        mac {
-            packageIdentifier = 'org.truetranslation.w121jsonconverter'
+        } else if (os.contains('win')) {
+            // -- Windows Settings --
+            type = ImageType.APP_IMAGE
+            icon = project.file('src/main/resources/JsonConverter.ico').absolutePath
+            win {
+                menu = false
+                shortcut = false
+            }
+
+        } else {
+            // -- Linux Settings (Defaults to .deb package) --
+            type = ImageType.DEB
+            icon = project.file('src/main/resources/JsonConverter.png').absolutePath
+            linux {
+                packageName = 'w121-json-converter'
+                packageDescription = 'A tool for converting JSON files.'
+                maintainer = 'Kos Ivantsov <contact@truetranslation.org>'
+                appCategory = 'Utility'
+            }
         }
-    } else if (project.hasProperty('os.name') && project.property('os.name').toString().toLowerCase().contains('win')) {
-        icon = project.file('src/main/resources/JsonConverter.ico').absolutePath
+    } else {
+        // Fallback for unknown OS
+        type = ImageType.APP_IMAGE
     }
 
+    // --- Included Java Modules (Common to all platforms) ---
     addModules = ['java.base', 'java.desktop', 'java.prefs', 'java.logging']
 }
