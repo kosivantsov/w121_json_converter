@@ -1,0 +1,111 @@
+import org.panteleyev.jpackage.ImageType
+
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'org.panteleyev.jpackageplugin' version '1.7.5'
+}
+
+group = 'org.truetranslation'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    poiVersion = '5.2.2'
+    batikVersion = '1.17'
+    groovyVersion = '3.0.9'
+    commonsTextVersion = '1.10.0'
+    flatlafVersion = '3.4.1'
+    gsonVersion = '2.10.1'
+}
+
+dependencies {
+    implementation "com.google.code.gson:gson:${gsonVersion}"
+    implementation "com.formdev:flatlaf:${flatlafVersion}"
+    implementation "com.formdev:flatlaf-intellij-themes:${flatlafVersion}"
+    implementation "org.apache.commons:commons-text:${commonsTextVersion}"
+    implementation "org.codehaus.groovy:groovy-all:${groovyVersion}"
+    implementation "org.apache.poi:poi:${poiVersion}"
+    implementation "org.apache.poi:poi-ooxml:${poiVersion}"
+    implementation "org.apache.poi:poi-ooxml-full:${poiVersion}"
+    implementation "org.apache.xmlbeans:xmlbeans:5.0.3"
+    implementation "commons-io:commons-io:2.11.0"
+    implementation "org.apache.logging.log4j:log4j-core:2.17.2"
+    implementation "org.apache.xmlgraphics:batik-transcoder:${batikVersion}"
+    implementation "org.apache.xmlgraphics:batik-codec:${batikVersion}"
+}
+
+application {
+    mainClass = 'JsonConverterGui'
+    applicationDefaultJvmArgs = [
+        "-Dapple.awt.application.name=The Word 121 Json Converter",
+        "-Dapple.awt.application.appearance=system"
+    ]
+}
+
+shadowJar {
+    archiveBaseName = 'JsonConverter'
+    archiveClassifier = ''
+    archiveVersion = '1.0'
+    manifest {
+        attributes(
+            'Main-Class': application.mainClass,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': "Kos Ivantsov|https://truetranslation.org"
+        )
+    }
+}
+
+sourceSets {
+    main {
+        java { srcDirs = ['src/main/java'] }
+        groovy { srcDirs = ['src/main/groovy'] }
+    }
+}
+
+jpackage {
+    dependsOn(shadowJar)
+
+    // --- Core Settings ---
+    mainJar = shadowJar.archiveFile.get().asFile.name
+    mainClass = application.mainClass.get()
+    type = ImageType.APP_IMAGE
+    input = layout.buildDirectory.dir("libs")
+    destination = layout.buildDirectory.dir('jpackage')
+
+    // --- App Metadata ---
+    appName = 'The Word 121 Json Converter'
+    appVersion = project.version
+    vendor = 'Kos Ivantsov | https://truetranslation.org'
+    description = 'A tool for converting JSON files.'
+    copyright = "Copyright (c) 2025, ${vendor}"
+
+    // --- macOS Integration ---
+    resourceDir = file('src/main/resources')
+    javaOptions.add("-Dapple.awt.application.appearance=system")
+    javaOptions.add('-Xdock:icon=$APPDIR/JsonConverter.icns')
+     javaOptions.add('-Dapple.awt.application.name=The Word 121 Json Converter')
+
+
+    if (project.hasProperty('os.name') && project.property('os.name').toString().toLowerCase().contains('mac')) {
+        icon = project.file('src/main/resources/JsonConverter.icns').absolutePath
+        mac {
+            packageIdentifier = 'org.truetranslation.w121jsonconverter'
+        }
+    } else if (project.hasProperty('os.name') && project.property('os.name').toString().toLowerCase().contains('win')) {
+        icon = project.file('src/main/resources/JsonConverter.ico').absolutePath
+    }
+
+    addModules = ['java.base', 'java.desktop', 'java.prefs', 'java.logging']
+}
