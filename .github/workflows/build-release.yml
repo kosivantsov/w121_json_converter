@@ -23,16 +23,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # **MODIFICATION FOR WINDOWS**
-      - name: Install WiX Toolset (if not present)
-        if: runner.os == 'Windows'
-        run: |
-          if (choco list --local-only | Select-String -Pattern 'wixtoolset' -Quiet) {
-            Write-Host 'WiX Toolset is already installed.'
-          } else {
-            choco install wixtoolset --version=3.14.0 -y
-          }
-        shell: powershell
+      # **CORRECTION: The WiX Toolset install step has been completely removed.**
+      # The Windows runner image has WiX pre-installed, making this step unnecessary and a source of errors.
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
@@ -42,7 +34,6 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x ./gradlew
 
-      # **MODIFICATION TO PREVENT CANCELLATION**
       - name: Build application with Gradle
         run: ./gradlew jpackage --no-daemon
         
