@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.prefs.Preferences;
+import java.util.prefs.BackingStoreException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,7 +68,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
     public JsonConverterGui() {
         super("JSON Conversion Tool");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(750, 580);
+        setSize(750, 620);
         setLayout(new BorderLayout(10, 10));
         
         lastUsedDirectory = prefs.get("lastUsedDirectory", System.getProperty("user.home"));
@@ -77,9 +78,7 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.LINE_END;
-        formPanel.add(new JLabel("Theme:"), gbc);
+        
         ThemeInfo[] themes = {
             new ThemeInfo("Arc Light", "com.formdev.flatlaf.intellijthemes.FlatArcIJTheme"),
             new ThemeInfo("Arc Dark", "com.formdev.flatlaf.intellijthemes.FlatArcDarkIJTheme"),
@@ -87,22 +86,21 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             new ThemeInfo("macOS Dark", "com.formdev.flatlaf.themes.FlatMacDarkLaf"),
             new ThemeInfo("Carbon", "com.formdev.flatlaf.intellijthemes.FlatCarbonIJTheme"),
             new ThemeInfo("Cobalt 2", "com.formdev.flatlaf.intellijthemes.FlatCobalt2IJTheme"),
-            new ThemeInfo("Cyan Light", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatCyanLightIJTheme"),
+            new ThemeInfo("Cyan Light", "com.formdev.flatlaf.intellijthemes.FlatCyanLightIJTheme"),
             new ThemeInfo("Dracula", "com.formdev.flatlaf.intellijthemes.FlatDraculaIJTheme"),
-            new ThemeInfo("Gradianto Deep Ocean", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatGradiantoDeepOceanIJTheme"),
+            new ThemeInfo("Gradianto Deep Ocean", "com.formdev.flatlaf.intellijthemes.FlatGradiantoDeepOceanIJTheme"),
             new ThemeInfo("Gruvbox Dark Hard", "com.formdev.flatlaf.intellijthemes.FlatGruvboxDarkHardIJTheme"),
             new ThemeInfo("Light Owl", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatLightOwlIJTheme"),
             new ThemeInfo("Material Darker", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMaterialDarkerIJTheme"),
-            new ThemeInfo("Monocai", "com.formdev.flatlaf.intellijthemes.materialthemeuilite.FlatMonocaiIJTheme"),
+            new ThemeInfo("Monocai", "com.formdev.flatlaf.intellijthemes.FlatMonocaiIJTheme"),
             new ThemeInfo("Nord", "com.formdev.flatlaf.intellijthemes.FlatNordIJTheme"),
             new ThemeInfo("One Dark", "com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme"),
-            new ThemeInfo("Solarized Light", "com.formdev.flatlaf.intellijthemes.FlatSolarizedLightIJTheme")
+            new ThemeInfo("Solarized Light", "com.formdev.flatlaf.intellijthemes.FlatSolarizedLightIJTheme"),
+            new ThemeInfo("Solarized Dark", "com.formdev.flatlaf.intellijthemes.FlatSolarizedDarkIJTheme")
         };
         themeComboBox = new JComboBox<>(themes);
-        gbc.gridx = 1; gbc.gridwidth = 1; gbc.anchor = GridBagConstraints.LINE_START;
-        formPanel.add(themeComboBox, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1; gbc.anchor = GridBagConstraints.LINE_START;
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.LINE_START;
         formPanel.add(new JLabel("Conversion Format:"), gbc);
         docxRadioButton = new JRadioButton("Convert to DOCX", true);
         htmlRadioButton = new JRadioButton("Convert to HTML");
@@ -117,25 +115,25 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         gbc.gridx = 2;
         formPanel.add(darkModeCheckbox, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Input:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 1; formPanel.add(new JLabel("Input:"), gbc);
         inputField = new JTextField(35);
         gbc.gridx = 1; gbc.weightx = 1.0; gbc.gridwidth = 2; formPanel.add(inputField, gbc);
         inputBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.weightx = 0; gbc.gridwidth = 1; formPanel.add(inputBrowseButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Strings File (Optional):"), gbc);
+        gbc.gridx = 0; gbc.gridy = 2; formPanel.add(new JLabel("Strings File (Optional):"), gbc);
         stringsField = new JTextField(35);
         gbc.gridx = 1; gbc.gridwidth = 2; formPanel.add(stringsField, gbc);
         stringsBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(stringsBrowseButton, gbc);
         
-        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Output:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 3; formPanel.add(new JLabel("Output:"), gbc);
         outputField = new JTextField(35);
         gbc.gridx = 1; gbc.gridwidth = 2; formPanel.add(outputField, gbc);
         outputBrowseButton = new JButton("Browse...");
         gbc.gridx = 3; gbc.gridwidth = 1; formPanel.add(outputBrowseButton, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; formPanel.add(new JLabel("Language:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 4; formPanel.add(new JLabel("Language:"), gbc);
         String[] languages = { "af-ZA", "am-ET", "ar-SA", "as-IN", "az-Latn-AZ", "be-BY", "bg-BG", "bn-IN", "bs-Latn-BA", "ca-ES", "cs-CZ", "cy-GB", "da-DK", "de-DE", "el-GR", "en-GB", "en-US", "es-ES", "es-MX", "et-EE", "eu-ES", "fa-IR", "fi-FI", "fil-PH", "fr-CA", "fr-FR", "ga-IE", "gd-GB", "gl-ES", "gu-IN", "ha-Latn-NG", "he-IL", "hi-IN", "hr-HR", "hu-HU", "hy-AM", "id-ID", "ig-NG", "is-IS", "it-IT", "ja-JP", "ka-GE", "kk-KZ", "km-KH", "kn-IN", "ko-KR", "kok-IN", "ku-Arab-IQ", "ky-KG", "lb-LU", "lo-LA", "lt-LT", "lv-LV", "mi-NZ", "mk-MK", "ml-IN", "mn-MN", "mr-IN", "ms-MY", "mt-MT", "nb-NO", "ne-NP", "nl-NL", "nn-NO", "nso-ZA", "or-IN", "pa-IN", "pl-PL", "prs-AF", "pt-BR", "pt-PT", "quc-Latn-GT", "quz-PE", "ro-RO", "ru-RU", "rw-RW", "sd-Arab-PK", "si-LK", "sk-SK", "sl-SI", "sq-AL", "sr-Cyrl-BA", "sr-Cyrl-RS", "sr-Latn-RS", "sv-SE", "sw-KE", "ta-IN", "te-IN", "tg-Cyrl-TJ", "th-TH", "ti-ET", "tk-TM", "tn-ZA", "tr-TR", "tt-RU", "ug-CN", "uk-UA", "ur-PK", "uz-Latn-UZ", "vi-VN", "wo-SN", "xh-ZA", "yo-NG", "zh-CN", "zh-TW", "zu-ZA"};
         languageComboBox = new JComboBox<>(languages);
         languageComboBox.setEditable(true);
@@ -143,28 +141,45 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         gbc.gridx = 1; gbc.gridwidth = 3; formPanel.add(languageComboBox, gbc);
         
         processAllCheckbox = new JCheckBox("Convert all JSON files in the folder");
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 4; formPanel.add(processAllCheckbox, gbc);
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 4; formPanel.add(processAllCheckbox, gbc);
         
         enableOutputCheckbox = new JCheckBox("Specify output folder (otherwise, output is saved next to input)");
-        gbc.gridy = 7; formPanel.add(enableOutputCheckbox, gbc);
+        gbc.gridy = 6; formPanel.add(enableOutputCheckbox, gbc);
 
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane logScrollPane = new JScrollPane(logArea);
         runButton = new JButton("Run Conversion");
+        runButton.setPreferredSize(new Dimension(500, runButton.getPreferredSize().height + 4));
+        
+        // --- Bottom Panel Setup ---
+        JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
+        
+        JPanel runPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        runPanel.add(runButton);
+        
+        // CORRECTED: Changed the settings panel layout to FlowLayout.CENTER
+        JPanel settingsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        settingsPanel.add(new JLabel("Theme:"));
+        settingsPanel.add(themeComboBox);
+        
+        JButton resetButton = new JButton("Reset Settings");
+        settingsPanel.add(resetButton);
+        
+        bottomPanel.add(runPanel, BorderLayout.NORTH);
+        bottomPanel.add(settingsPanel, BorderLayout.SOUTH);
+        
         add(formPanel, BorderLayout.NORTH);
         add(logScrollPane, BorderLayout.CENTER);
-        add(runButton, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         setupGroovyScripts();
         loadAppIcon();
 
-        // --- DOCK ICON FIX FOR MACOS ---
         try {
             if (Taskbar.isTaskbarSupported()) {
                 Taskbar taskbar = Taskbar.getTaskbar();
-
                 if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
                     final Toolkit defaultToolkit = Toolkit.getDefaultToolkit();
                     var dockIconUrl = getClass().getClassLoader().getResource("JsonConverter.png");
@@ -178,7 +193,6 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             log("Warning: Could not set Dock icon. " + e.getMessage());
         }
 
-        // Set up custom About dialog handler
         if (Desktop.isDesktopSupported()) {
             Desktop.getDesktop().setAboutHandler(this);
         }
@@ -190,6 +204,8 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             }
         });
         
+        resetButton.addActionListener(e -> resetSettings());
+
         String lastTheme = prefs.get("theme", "");
         boolean themeSet = false;
         for (int i = 0; i < themes.length; i++) {
@@ -220,29 +236,57 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         setVisible(true);
     }
     
-    // Add method to handle the "About" menu event
+    private void resetSettings() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "This will reset the saved theme and last used directory. Are you sure?",
+            "Confirm Reset",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                prefs.clear();
+                prefs.flush();
+
+                String defaultLafClass = "com.formdev.flatlaf.intellijthemes.FlatArcIJTheme";
+                UIManager.setLookAndFeel(defaultLafClass);
+                FlatLaf.updateUI();
+                
+                themeComboBox.setSelectedIndex(0);
+                
+                lastUsedDirectory = System.getProperty("user.home");
+                inputField.setText("");
+                stringsField.setText("");
+                outputField.setText("");
+                
+                log("All settings have been reset to their defaults.");
+
+            } catch (BackingStoreException | UnsupportedLookAndFeelException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                log("Error resetting settings: " + ex.getMessage());
+            }
+        }
+    }
+
     @Override
     public void handleAbout(AboutEvent e) {
         showAboutDialog();
     }
 
-    // Add method to create and show a custom About dialog
     private void showAboutDialog() {
-        String version = "1.0.0"; // Default
-        String vendorLine = "Kos Ivantsov"; // Default
-    
-        // Read manifest directly as a stream
+        String version = "1.0.0"; 
+        String vendorLine = "Kos Ivantsov"; 
+
         try (InputStream manifestStream = getClass().getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF")) {
             if (manifestStream != null) {
                 java.util.jar.Manifest manifest = new java.util.jar.Manifest(manifestStream);
                 java.util.jar.Attributes attributes = manifest.getMainAttributes();
                 String implVersion = attributes.getValue("Implementation-Version");
                 String implVendor = attributes.getValue("Implementation-Vendor");
-    
+
                 if (implVersion != null && !implVersion.isEmpty()) {
                     version = implVersion;
                 }
-                // Use the full vendor line from the manifest
                 if (implVendor != null && !implVendor.isEmpty()) {
                     vendorLine = implVendor;
                 }
@@ -250,11 +294,11 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         } catch (IOException ex) {
             log("Warning: Could not read manifest file. " + ex.getMessage());
         }
-    
+
         JDialog aboutDialog = new JDialog(this, "About The Word 121 Json Converter", true);
         aboutDialog.setLayout(new BorderLayout(15, 15));
         aboutDialog.getRootPane().setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-    
+
         java.net.URL iconURL = getClass().getClassLoader().getResource("JsonConverter.png");
         if (iconURL != null) {
             ImageIcon icon = new ImageIcon(iconURL);
@@ -263,42 +307,41 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
             iconLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
             aboutDialog.add(iconLabel, BorderLayout.WEST);
         }
-    
+
         JPanel textPanel = new JPanel();
         textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
         textPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 10));
-    
+
         JLabel appNameLabel = new JLabel("The Word 121 Json Converter");
         appNameLabel.setFont(new Font(appNameLabel.getFont().getName(), Font.BOLD, 16));
         
         JLabel versionLabel = new JLabel("Version: " + version);
-    
+
         appNameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-    
+
         textPanel.add(appNameLabel);
-        textPanel.add(Box.createRigidArea(new Dimension(0, 5))); // Spacer
+        textPanel.add(Box.createRigidArea(new Dimension(0, 5)));
         textPanel.add(versionLabel);
-    
-        // CORRECTED: Split the vendor string and add multiple labels
+        
         String[] vendorParts = vendorLine.split("\\|");
-        JLabel copyrightLabel = new JLabel("Copyright © 2025 " + vendorParts[0]);
+        JLabel copyrightLabel = new JLabel("Copyright © 2025 " + vendorParts[0].trim());
         copyrightLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         textPanel.add(copyrightLabel);
-    
+
         if (vendorParts.length > 1) {
-            JLabel companyLabel = new JLabel(vendorParts[1]);
+            JLabel companyLabel = new JLabel(vendorParts[1].trim());
             companyLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
             textPanel.add(companyLabel);
         }
-    
+
         aboutDialog.add(textPanel, BorderLayout.CENTER);
         aboutDialog.pack();
         aboutDialog.setResizable(false);
         aboutDialog.setLocationRelativeTo(this);
         aboutDialog.setVisible(true);
     }
-
+    
     private void changeTheme(String className) {
         try {
             UIManager.setLookAndFeel(className);
