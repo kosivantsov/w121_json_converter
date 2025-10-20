@@ -40,7 +40,7 @@ No Java installation is required, as the necessary runtime is bundled with the a
 
 ## Usage
 
-1.  Launch the application.
+1.  **Launch** the application.
 2.  **Select Conversion Mode**:
     -   For converting an entire folder of `.json` files, check the box labeled **"Convert all JSON files in the selected folder"**.
     -   For converting a single file, leave this box unchecked.
