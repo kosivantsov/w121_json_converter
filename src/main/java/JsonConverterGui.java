@@ -118,9 +118,9 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         radioPanel.add(docxRadioButton);
         radioPanel.add(htmlRadioButton);
         gbc.gridx = 1; formPanel.add(radioPanel, gbc);
-        darkModeCheckbox = new JCheckBox("Dark Mode");
-        gbc.gridx = 2;
-        formPanel.add(darkModeCheckbox, gbc);
+//        darkModeCheckbox = new JCheckBox("Dark Mode");
+//        gbc.gridx = 2;
+//        formPanel.add(darkModeCheckbox, gbc);
         
         // Row 1: "Convert all" checkbox
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 4;
@@ -170,6 +170,11 @@ public class JsonConverterGui extends JFrame implements AboutHandler {
         languageComboBox.setEditable(true);
         languageComboBox.setSelectedItem("en-GB");
         gbc.gridx = 1; gbc.gridwidth = 3; formPanel.add(languageComboBox, gbc);
+
+        darkModeCheckbox = new JCheckBox("Dark Mode");
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 3;
+        formPanel.add(darkModeCheckbox, gbc);
+        darkModeCheckbox.setVisible(false);
 
         logArea = new JTextArea();
         logArea.setEditable(false);
