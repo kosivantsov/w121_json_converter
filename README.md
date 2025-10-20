@@ -1,10 +1,15 @@
+<p align="left"><img src="https://scontent-ham3-1.xx.fbcdn.net/v/t39.30808-1/326409933_859165191807363_6166716551764762023_n.png?stp=dst-png_s480x480&_nc_cat=110&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=-Q3j4wjZncIQ7kNvwGc4Fad&_nc_oc=Adn-w27ekBhMAdOpP5UXgUkhgp1BbuAP-6LitE1yNevNE6Po_FfmQ3f8KTf1NXN7gx8&_nc_zt=24&_nc_ht=scontent-ham3-1.xx&_nc_gid=kU_nKR8-KFGM_ljD07KfHQ&oh=00_AfdyGkzFW7_u0zzVQY1fLrDP3oSdC_EoCGZ0QTE4louZCQ&oe=68FBF032" alt="W121 Logo" width="100"/></p>
+
 # The Word One to One JSON Converter
 
 A Java desktop utility to convert [The Word One to One](https://www.theword121.com/) episode files from their JSON translation format into user-friendly DOCX and HTML documents.
 
 This tool was created to provide a simple way to preview and proofread translated episodes outside of the official CMS.
 
-<img width="90%" alt="Main App" src="https://github.com/user-attachments/assets/41548b41-2102-4a93-948f-8cfe0b013751" />
+<img width="70%" alt="GUI Light Theme" src="https://github.com/user-attachments/assets/7c505df0-05ad-467f-b669-33fee94374d3" />
+<img width="70%" alt="GUI Dark Theme" src="https://github.com/user-attachments/assets/6d8751d4-3ef8-431e-98fc-39f1d3e3e6ee" />
+
+
 
 
 ## Key Features
@@ -13,10 +18,10 @@ This tool was created to provide a simple way to preview and proofread translate
 -   **App String Injection**: If a `.txt` or `.json` file containing the mobile app's UI strings is provided, these elements (which are absent from the episode JSON) will be correctly inserted into the output. Otherwise, they are omitted.
 -   **Dual Output Formats**:
     -   **HTML**: Supports both light and dark modes for comfortable viewing.
-      <img width="600" alt="HTML Output" src="https://github.com/user-attachments/assets/92d4d285-016b-4397-93af-4c252fa72f05" />
-
+        <img width="600" alt="HTML Light" src="https://github.com/user-attachments/assets/3cb30543-8639-4544-9c39-5a8c5905ce0e" />
+        <img width="600" alt="HTML Dark" src="https://github.com/user-attachments/assets/e9f6e4d8-0c39-4783-a422-c1f0e63974af" />
     -   **DOCX**: Allows selection of a spell-checking language for easier proofreading in Microsoft Word and other editors.
-      <img width="600" alt="DOCX Output" src="https://github.com/user-attachments/assets/216426ab-54db-4a1e-8c5c-6d8b2e4e03fe" />
+        <img width="600" alt="DOCX" src="https://github.com/user-attachments/assets/9c446748-5088-43de-ad34-e372075072c0" />
 -   **Flexible Output Location**: Save converted files to a specific folder or place them alongside the original input files.
 -   **Native Look and Feel**: The application includes several themes to integrate visually with different operating systems (Windows, macOS, Linux).
 
