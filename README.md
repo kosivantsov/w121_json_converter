@@ -18,9 +18,12 @@ This tool was created to provide a simple way to preview and proofread translate
 -   **App String Injection**: If a `.txt` or `.json` file containing the mobile app's UI strings is provided, these elements (which are absent from the episode JSON) will be correctly inserted into the output. Otherwise, they are omitted.
 -   **Dual Output Formats**:
     -   **HTML**: Supports both light and dark modes for comfortable viewing.
+
         <img width="600" alt="HTML Light" src="https://github.com/user-attachments/assets/3cb30543-8639-4544-9c39-5a8c5905ce0e" />
         <img width="600" alt="HTML Dark" src="https://github.com/user-attachments/assets/e9f6e4d8-0c39-4783-a422-c1f0e63974af" />
+        
     -   **DOCX**: Allows selection of a spell-checking language for easier proofreading in Microsoft Word and other editors.
+
         <img width="600" alt="DOCX" src="https://github.com/user-attachments/assets/9c446748-5088-43de-ad34-e372075072c0" />
 -   **Flexible Output Location**: Save converted files to a specific folder or place them alongside the original input files.
 -   **Native Look and Feel**: The application includes several themes to integrate visually with different operating systems (Windows, macOS, Linux).
