@@ -30,13 +30,35 @@ This tool was created to provide a simple way to preview and proofread translate
 
 ## Installation
 
-You can download the latest pre-packaged release for your operating system from the **[Releases page](https://github.com/kosivantsov/w121_json_converter/releases)**.
+Download the latest assets for your operating system from the [Releases page](httpss://github.com/kosivantsov/w121_json_converter/releases).
 
--   **macOS**: Download the `.zip` file, extract it, and you will find the `The Word121 JSON Converter.app` bundle.
--   **Windows**: Download the `.zip` containing the application folder and run the `.exe` file.
--   **Linux**: Download the `.deb` package, which can be installed on Debian-based systems.
+The packaged installers for macOS, Windows, and Linux are the recommended method as they include the required Java runtime and do not require you to have Java installed.
 
-No Java installation is required, as the necessary runtime is bundled with the application.
+### Packaged Installers
+
+*   **macOS**: Download the `JsonConverter-macOS.zip` archive. After extracting it, drag `The Word121 JSON Converter.app` to your `/Applications` folder.
+    *   **Note**: As the application is not from an identified developer, you must manually approve it.
+        1.  Right-click the app icon and select "Open." A warning dialog will appear. Select "Open Anyway".
+        2.  Go to `System Settings` > `Privacy & Security`.
+        3.  Scroll down to the security section, where you will find a message about the app being blocked. Click the "Open Anyway" button.
+        4.  You can now launch the application.
+
+*   **Windows**: Download the `JsonConverter-Windows.zip` archive. Extract the contents and run the `The Word121 JSON Converter.exe` file.
+    *   **Note**: Windows SmartScreen might block the application. If this happens, click "More info" and then "Run anyway."
+
+*   **Linux**: Download the `JsonConverter-Linux-DEB.zip` archive and extract the contents. Install it on a Debian-based system (e.g., Ubuntu) with `sudo dpkg -i the-word121-json-converter_<version>_amd64.deb`.
+    *   The executable will be installed as `/opt/the-word121-json-converter/bin/The Word121 JSON Converter`.
+
+### Using the JAR File
+
+If you have Java 17 or newer installed on your system, you can use the cross-platform JAR file.
+
+1.  Download `JsonConverter-<version>.jar.zip` from the Releases page and extract the archive.
+2.  Launch the resulting `JsonConverter-<version>.jar` file by either double-clicking it or running the following command in your terminal:
+
+```
+java -jar JsonConverter-<version>.jar
+```
 
 ## Usage
 
