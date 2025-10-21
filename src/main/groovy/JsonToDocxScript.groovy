@@ -48,6 +48,7 @@ class JsonToDocxScript {
 
         def slurper = new JsonSlurper()
         
+        // Parse raw data and then preprocess it (for {soft_break})
         def rawData = slurper.parse(curFile)
         def data = preprocessJsonContent(rawData)
 
@@ -60,19 +61,16 @@ class JsonToDocxScript {
         }
 
         println "Generating DOCX for '${curFile.name}'..."
-        buildDocx(data, stringsData, outDocx, targetLanguage)
+        buildDocx(data as Map, stringsData as Map, outDocx, targetLanguage)
         println "Wrote: ${outDocx.absolutePath}"
     }
     
+    // Recursively traverse JSON and replace a single newline inside *...* with {soft_break}
     def preprocessJsonContent(obj) {
         if (obj instanceof Map) {
-            obj.each { key, value ->
-                obj[key] = preprocessJsonContent(value)
-            }
+            obj.each { k, v -> obj[k] = preprocessJsonContent(v) }
         } else if (obj instanceof List) {
-            for (int i = 0; i < obj.size(); i++) {
-                obj[i] = preprocessJsonContent(obj[i])
-            }
+            for (int i = 0; i < obj.size(); i++) obj[i] = preprocessJsonContent(obj[i])
         } else if (obj instanceof String) {
             return obj.replaceAll(/(?m)(^\*[^\r\n]*)\r?\n([^\r\n]*\*$)/, '$1{soft_break}$2')
         }
@@ -82,7 +80,7 @@ class JsonToDocxScript {
     List parseLineToStyledSpans(String line) {
         def PAIR_BOLD_RE = Pattern.compile(/\*\*(.+?)\*\*/)
         def parts = []
-        if (line == null) return parts;
+        if (line == null) return parts
         def mb = PAIR_BOLD_RE.matcher(line)
         int cursor = 0
         while (mb.find()) {
@@ -104,10 +102,7 @@ class JsonToDocxScript {
         
         int firstNonWs = -1
         for (int i = 0; i < line.length(); i++) {
-            if (!Character.isWhitespace(line.charAt(i))) {
-                firstNonWs = i
-                break
-            }
+            if (!Character.isWhitespace(line.charAt(i))) { firstNonWs = i; break }
         }
         
         int bulletPos = -1
@@ -116,20 +111,15 @@ class JsonToDocxScript {
         }
 
         def italPairs = []
-        for (int k = singleIdx.size() - 2; k >= 0; k -= 2) {
-            italPairs.add([singleIdx[k], singleIdx[k+1]])
-        }
+        for (int k = singleIdx.size() - 2; k >= 0; k -= 2) italPairs.add([singleIdx[k], singleIdx[k+1]])
         def startSet = new HashSet(italPairs.collect { it[0] })
         def endSet = new HashSet(italPairs.collect { it[1] })
 
         def out = []
         def append = { String t, boolean b, boolean i ->
             if (t.isEmpty()) return
-            if (!out.isEmpty() && out.last()[1] == b && out.last()[2] == i) {
-                out.last()[0] += t
-            } else {
-                out << [t, b, i]
-            }
+            if (!out.isEmpty() && out.last()[1] == b && out.last()[2] == i) out.last()[0] += t
+            else out << [t, b, i]
         }
 
         parts.each { seg ->
@@ -289,12 +279,8 @@ class JsonToDocxScript {
             def st = ensureParagraphStyle(doc, name) { }
             st.getCTStyle().addNewRPr().addNewB().setVal(true)
         }
-        ensureCharacterStyle(doc, "TickChar") { ct ->
-            ct.addNewRPr().addNewColor().setVal(rgbHex(TICK_BLUE))
-        }
-        ensureCharacterStyle(doc, "EmChar") { ct ->
-            ct.addNewRPr().addNewI().setVal(true)
-        }
+        ensureCharacterStyle(doc, "TickChar") { ct -> ct.addNewRPr().addNewColor().setVal(rgbHex(TICK_BLUE)) }
+        ensureCharacterStyle(doc, "EmChar") { ct -> ct.addNewRPr().addNewI().setVal(true) }
     }
     
     List makeBlockTable(XWPFDocument doc, Color fill, Color border) {
@@ -325,7 +311,7 @@ class JsonToDocxScript {
     List splitTicks(String text) {
         def TICK_RE = ~/`([^`]+)`/
         def out = []
-        if (text == null) return out;
+        if (text == null) return out
         def m = TICK_RE.matcher(text)
         int last = 0
         while (m.find()) {
@@ -338,19 +324,18 @@ class JsonToDocxScript {
         return out
     }
     
+    // Proper soft break handling via BreakType.TEXT_WRAPPING
     void addInlineToParagraph(XWPFParagraph p, String text, boolean isNotes) {
         if (text == null) return
         text.split('\n', -1).eachWithIndex { line, idx ->
-            if (idx > 0) p.createRun().addBreak() // Paragraph break
+            if (idx > 0) p.createRun().addBreak() // paragraph line break between input lines
 
             parseLineToStyledSpans(line).each { span ->
                 def (spanText, isBold, isItalic) = span
                 
                 splitTicks(spanText).each { tup ->
                     def (kind, content) = tup
-                    
                     def parts = content.split('\\{soft_break\\}', -1)
-                    
                     parts.eachWithIndex { part, i ->
                         def r = p.createRun()
                         r.setText(part)
@@ -380,7 +365,6 @@ class JsonToDocxScript {
                             if (isNotes) r.setColor(rgbHex(NOTES_TEXT))
                         }
 
-                        // Add soft break if not the last part
                         if (i < parts.size() - 1) {
                             r.addBreak(BreakType.TEXT_WRAPPING)
                         }
@@ -390,19 +374,31 @@ class JsonToDocxScript {
         }
     }
 
+    // Helper: lazily remove the default empty paragraph in a cell only when we add the first real paragraph
+    XWPFParagraph addCellParagraphLazy(XWPFTableCell cell, Map state) {
+        if (!state.removed) {
+            if (cell.getParagraphs().size() > 0 && cell.getParagraphs()[0].getText().trim().isEmpty()) {
+                cell.removeParagraph(0)
+            }
+            state.removed = true
+        }
+        return cell.addParagraph()
+    }
+
     void addNotesBlock(XWPFDocument doc, List items, boolean isRecap) {
         def cell = makeBlockTable(doc, NOTES_BG, NOTES_BORDER)[1]
-        if (cell.getParagraphs().size() > 0 && cell.getParagraphs()[0].getText().trim().isEmpty()) {
-            cell.removeParagraph(0)
-        }
+        def state = [removed: false]  // for lazy removal
+        
         def h4style = isRecap ? "H4Recap" : "H4Notes"
-        items.each { item ->
-            def kind = item.type ?: ""
-            def content = item.content ?: ""
+        items?.each { item ->
+            def kind = item?.type ?: ""
+            def content = (item?.content ?: "") as String
             
             content.split('\n', -1).each { line ->
-                 def p = cell.addParagraph()
+                 if (line == null || line.isEmpty()) return
+                 
                  if (line.trim().startsWith("###")) {
+                     def p = addCellParagraphLazy(cell, state)
                      p.setStyle(h4style)
                      def r = p.createRun()
                      r.setText(line.trim().substring(4).replaceAll(/\*\*(.*?)\*\*/, '$1'))
@@ -411,6 +407,7 @@ class JsonToDocxScript {
                      r.setFontSize(12)
                      r.setColor(isRecap ? rgbHex(TICK_BLUE) : rgbHex(NOTES_TEXT))
                  } else {
+                    def p = addCellParagraphLazy(cell, state)
                     if (kind == "reflection") {
                         p.setStyle("ReflectionPara")
                     } else if (kind == "keyPoint") {
@@ -436,6 +433,7 @@ class JsonToDocxScript {
                  }
             }
         }
+        // If nothing was added, the default empty paragraph still remains → valid DOCX
     }
     
     void embedSvg(XWPFDocument doc, String svgUrl) {
@@ -473,164 +471,187 @@ class JsonToDocxScript {
         ensureSectPr(doc)
         setThemeFonts(doc, langCode)
         
-        def bundle = data.bundle ?: [:]
+        def bundle = data?.bundle ?: [:]
         
         if (bundle.imageUrl) {
-            embedSvg(doc, bundle.imageUrl)
+            embedSvg(doc, bundle.imageUrl as String)
         }
 
-        def eyebrowTpl = strings.episodeEpisodeId ?: "Episode {episodeId}"
+        // Eyebrow line with safe fallback template
+        def eyebrowTpl = (strings?.episodeEpisodeId ?: "Episode {episodeId}") as String
         def eyebrowP = doc.createParagraph()
         setPara(eyebrowP, ParagraphAlignment.CENTER, null, 4)
         def er = eyebrowP.createRun()
-        er.setText(eyebrowTpl.replace("{episodeId}", data.number.toString()))
+        er.setText(eyebrowTpl.replace("{episodeId}", String.valueOf(data?.number)))
         er.setBold(true)
         er.setFontSize(11)
         er.setColor(rgbHex(NOTES_BG))
 
+        // Title (from data; safe with empty fallback)
         def titleP = doc.createParagraph()
         setPara(titleP, ParagraphAlignment.LEFT, null, 6)
         titleP.createRun().with {
-            setText(bundle.title ?: "")
+            setText((bundle?.title ?: "") as String)
             setBold(true)
             setFontSize(16)
         }
 
-        if (bundle.intro) {
+        // Intro block (data-driven)
+        if (bundle?.intro) {
             def introCell = makeBlockTable(doc, new Color(0xF7, 0xFA, 0xFC), new Color(0xE5, 0xE7, 0xEB))[1]
-            if(introCell.paragraphs.size() > 0) introCell.removeParagraph(0)
-            def ip = introCell.addParagraph()
+            def state = [removed: false]
+            def ip = addCellParagraphLazy(introCell, state)
             ip.setStyle("NotesPara")
-            addInlineToParagraph(ip, bundle.intro, false)
+            addInlineToParagraph(ip, bundle.intro as String, false)
         }
 
-        bundle.spreads?.each { spread ->
-            doc.createParagraph() 
+        // Spreads
+        bundle?.spreads?.each { spread ->
+            doc.createParagraph()
             def cell = makeBlockTable(doc, Color.WHITE, new Color(0xE5, 0xE7, 0xEB))[1]
-            if(cell.paragraphs.size() > 0) cell.removeParagraph(0)
+            def state = [removed: false]
             
-            def scripture = spread.scripture ?: [:]
-            def stype = spread.type ?: ""
-            def reference = scripture.reference ?: ""
+            def scripture = spread?.scripture ?: [:]
+            def stype = (spread?.type ?: "") as String
+            def reference = (scripture?.reference ?: "") as String
 
             if (stype == "stopAndThink") {
-                if (strings.stopAndThink) {
-                    def p = cell.addParagraph()
+                if (strings?.stopAndThink) {
+                    def p = addCellParagraphLazy(cell, state)
                     p.setStyle("UniformTitle")
-                    p.createRun().setText(strings.stopAndThink)
+                    p.createRun().setText(strings.stopAndThink as String)
                 }
-                if (strings.letsTakeAMomentToThink) {
-                    def p = cell.addParagraph()
-                    p.createRun().setText(strings.letsTakeAMomentToThink)
+                if (strings?.letsTakeAMomentToThink) {
+                    def p = addCellParagraphLazy(cell, state)
+                    p.createRun().setText(strings.letsTakeAMomentToThink as String)
                 }
             }
             if (reference && stype != "stopAndThink") {
-                 def p = cell.addParagraph(); p.setStyle("UniformTitle")
+                 def p = addCellParagraphLazy(cell, state)
+                 p.setStyle("UniformTitle")
                  def r = p.createRun(); r.setText(reference); r.setColor(rgbHex(NOTES_BG))
             }
-            if (spread.callout) {
-                 def p = cell.addParagraph(); p.setStyle("CalloutPara")
-                 addInlineToParagraph(p, spread.callout, false)
+            if (spread?.callout) {
+                 def p = addCellParagraphLazy(cell, state)
+                 p.setStyle("CalloutPara")
+                 addInlineToParagraph(p, spread.callout as String, false)
                  setParagraphBorderAll(p, "000000", 8, 4)
             }
-            if (scripture.verse) {
-                def scriptureP = cell.addParagraph()
+            if (scripture?.verse) {
+                def scriptureP = addCellParagraphLazy(cell, state)
                 scriptureP.setStyle("Scripture")
-                addInlineToParagraph(scriptureP, scripture.verse, false)
+                addInlineToParagraph(scriptureP, scripture.verse as String, false)
             }
-            if (spread.subtitle) {
-                def sp = cell.addParagraph(); sp.setStyle("Subtitle")
-                def r = sp.createRun(); r.setText(spread.subtitle); r.setColor(rgbHex(ACCENT))
+            if (spread?.subtitle) {
+                def sp = addCellParagraphLazy(cell, state)
+                sp.setStyle("Subtitle")
+                def r = sp.createRun(); r.setText(spread.subtitle as String); r.setColor(rgbHex(ACCENT))
             }
-            if (spread.notes) {
-                addNotesBlock(doc, spread.notes, false)
+            if (spread?.notes) {
+                addNotesBlock(doc, spread.notes as List, false)
             }
         }
 
-        if (bundle.conclusions || bundle.summaryIntro) {
+        // Conclusions / Summary
+        if (bundle?.conclusions || bundle?.summaryIntro || strings?.summary) {
             doc.createParagraph()
             def cell = makeBlockTable(doc, NOTES_BG, NOTES_BORDER)[1]
-            if(cell.paragraphs.size() > 0) cell.removeParagraph(0)
-            if(strings.summary) {
-                def p = cell.addParagraph(); p.setStyle("UniformTitle")
-                def r = p.createRun(); r.setText(strings.summary); r.setColor(rgbHex(NOTES_TEXT))
+            def state = [removed: false]
+            if (strings?.summary) {
+                def p = addCellParagraphLazy(cell, state)
+                p.setStyle("UniformTitle")
+                def r = p.createRun(); r.setText(strings.summary as String); r.setColor(rgbHex(NOTES_TEXT))
             }
-            if(bundle.summaryIntro) {
-                def p = cell.addParagraph(); addInlineToParagraph(p, bundle.summaryIntro, true)
+            if (bundle?.summaryIntro) {
+                def p = addCellParagraphLazy(cell, state)
+                addInlineToParagraph(p, bundle.summaryIntro as String, true)
                 p.getRuns().each { it.setBold(true) }
             }
-            bundle.conclusions?.each { c ->
-                if(c.statement) addInlineToParagraph(cell.addParagraph(), c.statement, true)
-                if(c.excerpt) {
-                     def p = cell.addParagraph(); p.setStyle("Scripture")
-                     addInlineToParagraph(p, c.excerpt, false)
-                     setParagraphShading(p, new Color(0xF5, 0xF5, 0xF5))
-                     setParagraphBorderAll(p, "E5E7EB", 6, 8)
+            bundle?.conclusions?.each { c ->
+                if (c?.statement) {
+                    def p = addCellParagraphLazy(cell, state)
+                    addInlineToParagraph(p, c.statement as String, true)
+                }
+                if (c?.excerpt) {
+                    def p = addCellParagraphLazy(cell, state)
+                    p.setStyle("Scripture")
+                    addInlineToParagraph(p, c.excerpt as String, false)
+                    setParagraphShading(p, new Color(0xF5, 0xF5, 0xF5))
+                    setParagraphBorderAll(p, "E5E7EB", 6, 8)
                 }
             }
+            // If nothing added, the default paragraph remains and the doc stays valid
         }
         
-        if (bundle.reflection) {
+        // Reflection band
+        if (bundle?.reflection) {
             doc.createParagraph()
             def cell = makeBlockTable(doc, BAND_BG, BAND_BG)[1]
-            if(cell.paragraphs.size() > 0) cell.removeParagraph(0)
-            if (strings.toThinkAbout) {
-                def p = cell.addParagraph(); p.setStyle("UniformTitle")
-                def r = p.createRun(); r.setText(strings.toThinkAbout); r.setBold(true); r.setFontFamily(SANS); r.setColor(rgbHex(BAND_TEXT))
+            def state = [removed: false]
+            if (strings?.toThinkAbout) {
+                def p = addCellParagraphLazy(cell, state)
+                p.setStyle("UniformTitle")
+                def r = p.createRun(); r.setText(strings.toThinkAbout as String); r.setBold(true); r.setFontFamily(SANS); r.setColor(rgbHex(BAND_TEXT))
             }
-            def p = cell.addParagraph(); p.setStyle("ReflectionPara")
-            addInlineToParagraph(p, bundle.reflection, true)
+            def p = addCellParagraphLazy(cell, state)
+            p.setStyle("ReflectionPara")
+            addInlineToParagraph(p, bundle.reflection as String, true)
             p.getRuns().each { it.setColor(rgbHex(BAND_TEXT)) }
         }
 
-        if(bundle.passage && (bundle.passage.reference || bundle.passage.verse)) {
+        // Passage reread
+        if (bundle?.passage && ((bundle.passage.reference ?: "") || (bundle.passage.verse ?: ""))) {
             doc.createParagraph()
             def cell = makeBlockTable(doc, Color.WHITE, new Color(0xE5,0xE7,0xEB))[1]
-            if(cell.paragraphs.size() > 0) cell.removeParagraph(0)
-            if(strings.readAgain) {
-                 def p = cell.addParagraph(); p.setStyle("UniformTitle")
-                 def r = p.createRun(); r.setText(strings.readAgain); r.setColor(rgbHex(NOTES_BG))
+            def state = [removed: false]
+            if (strings?.readAgain) {
+                 def p = addCellParagraphLazy(cell, state); p.setStyle("UniformTitle")
+                 def r = p.createRun(); r.setText(strings.readAgain as String); r.setColor(rgbHex(NOTES_BG))
             }
-            if(bundle.passage.reference) {
-                 def p = cell.addParagraph(); def r = p.createRun(); r.setText(bundle.passage.reference)
+            if (bundle.passage.reference) {
+                 def p = addCellParagraphLazy(cell, state)
+                 def r = p.createRun(); r.setText(bundle.passage.reference as String)
                  r.setBold(true); r.setColor(rgbHex(ACCENT))
             }
-            if(strings.takeAMomentToReRead) {
-                def p = cell.addParagraph(); p.createRun().setText(strings.takeAMomentToReRead)
+            if (strings?.takeAMomentToReRead) {
+                def p = addCellParagraphLazy(cell, state)
+                p.createRun().setText(strings.takeAMomentToReRead as String)
             }
-            if(bundle.passage.verse) {
-                 def p = cell.addParagraph(); p.setStyle("Scripture")
-                 addInlineToParagraph(p, bundle.passage.verse, false)
+            if (bundle.passage.verse) {
+                 def p = addCellParagraphLazy(cell, state); p.setStyle("Scripture")
+                 addInlineToParagraph(p, bundle.passage.verse as String, false)
             }
         }
 
-        if(bundle.recap || bundle.recapToThinkAbout) {
+        // Recap/To think about (notes block)
+        if (bundle?.recap || bundle?.recapToThinkAbout) {
              doc.createParagraph()
              def notes = []
-             if(bundle.recap) notes.add([content: bundle.recap])
-             if(bundle.recapToThinkAbout) notes.add([type: 'reflection', content: bundle.recapToThinkAbout])
+             if (bundle.recap) notes.add([content: bundle.recap])
+             if (bundle.recapToThinkAbout) notes.add([type: 'reflection', content: bundle.recapToThinkAbout])
              addNotesBlock(doc, notes, true)
         }
         
-        if(bundle.nextUp) {
+        // Next up band
+        if (bundle?.nextUp) {
             doc.createParagraph()
             def cell = makeBlockTable(doc, BAND_BG, BAND_BG)[1]
-            if(cell.paragraphs.size() > 0) cell.removeParagraph(0)
-            if(strings.nextUp) {
-                 def p = cell.addParagraph(); p.setStyle("UniformTitle")
-                 def r = p.createRun(); r.setText(strings.nextUp); r.setColor(rgbHex(BAND_TEXT))
+            def state = [removed: false]
+            if (strings?.nextUp) {
+                 def p = addCellParagraphLazy(cell, state); p.setStyle("UniformTitle")
+                 def r = p.createRun(); r.setText(strings.nextUp as String); r.setColor(rgbHex(BAND_TEXT))
             }
-            if (strings.episodeComplete) {
-                def p = cell.addParagraph()
+            if (strings?.episodeComplete) {
+                def p = addCellParagraphLazy(cell, state)
                 p.setStyle("ReflectionPara")
                 p.setAlignment(ParagraphAlignment.CENTER)
-                addInlineToParagraph(p, strings.episodeComplete, true)
+                addInlineToParagraph(p, strings.episodeComplete as String, true)
                 p.getRuns().each { it.setColor(rgbHex(BAND_TEXT)) }
             }
-            def p = cell.addParagraph()
+            def p = addCellParagraphLazy(cell, state)
             p.setStyle("ReflectionPara")
-            addInlineToParagraph(p, bundle.nextUp, true)
-            p.getRuns().each { it.setColor(rgbHex(BAND_TEXT)) }
+            addInlineToParagraph(p, bundle.nextUp as String, true)
+            p.getRuns().each { it.setColor(rgbHex(BAND_TEXT)) } // Typo guarded below
         }
         
         outFile.withOutputStream { os -> doc.write(os) }
