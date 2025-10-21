@@ -10,7 +10,7 @@ plugins {
 }
 
 group = 'org.truetranslation'
-version = '1.0.0'
+version = '1.2.0'
 
 java {
     toolchain {
@@ -58,7 +58,7 @@ application {
 shadowJar {
     archiveBaseName = 'JsonConverter'
     archiveClassifier = ''
-    archiveVersion = '1.0'
+    archiveVersion = '1.2'
     mergeServiceFiles()
     manifest {
         attributes(

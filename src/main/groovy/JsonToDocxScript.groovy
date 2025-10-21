@@ -12,6 +12,7 @@ import org.apache.batik.transcoder.TranscoderOutput
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
+import org.apache.poi.xwpf.usermodel.BreakType
 
 class JsonToDocxScript {
 
@@ -46,10 +47,14 @@ class JsonToDocxScript {
         try { Class.forName('org.apache.batik.transcoder.image.PNGTranscoder') } catch (Throwable t) { haveBatik = false }
 
         def slurper = new JsonSlurper()
-        def data = slurper.parse(curFile)
+        
+        def rawData = slurper.parse(curFile)
+        def data = preprocessJsonContent(rawData)
+
         def stringsData = [:]
         if (stringsFile?.exists()) {
-            stringsData = slurper.parse(stringsFile)
+            def rawStrings = slurper.parse(stringsFile)
+            stringsData = preprocessJsonContent(rawStrings)
         } else if (stringsPath) {
             println "Warning: Strings file not found at '${stringsFile.absolutePath}'"
         }
@@ -57,6 +62,21 @@ class JsonToDocxScript {
         println "Generating DOCX for '${curFile.name}'..."
         buildDocx(data, stringsData, outDocx, targetLanguage)
         println "Wrote: ${outDocx.absolutePath}"
+    }
+    
+    def preprocessJsonContent(obj) {
+        if (obj instanceof Map) {
+            obj.each { key, value ->
+                obj[key] = preprocessJsonContent(value)
+            }
+        } else if (obj instanceof List) {
+            for (int i = 0; i < obj.size(); i++) {
+                obj[i] = preprocessJsonContent(obj[i])
+            }
+        } else if (obj instanceof String) {
+            return obj.replaceAll(/(?m)(^\*[^\r\n]*)\r?\n([^\r\n]*\*$)/, '$1{soft_break}$2')
+        }
+        return obj
     }
     
     List parseLineToStyledSpans(String line) {
@@ -120,15 +140,15 @@ class JsonToDocxScript {
             for (int i = a; i < b; ++i) {
                 if (bulletPos == i) {
                     append(currentText.toString(), isBold, inItalic)
-                    currentText.delete(0, currentText.length()) // CORRECTED
+                    currentText.delete(0, currentText.length())
                     append("•", isBold, false)
                 } else if (startSet.contains(i)) {
                     append(currentText.toString(), isBold, inItalic)
-                    currentText.delete(0, currentText.length()) // CORRECTED
+                    currentText.delete(0, currentText.length())
                     inItalic = true
                 } else if (endSet.contains(i)) {
                     append(currentText.toString(), isBold, inItalic)
-                    currentText.delete(0, currentText.length()) // CORRECTED
+                    currentText.delete(0, currentText.length())
                     inItalic = false
                 } else {
                     currentText.append(line[i])
@@ -139,8 +159,6 @@ class JsonToDocxScript {
         return out
     }
     
-    // --- All other helper methods (rgbHex, buildDocx, etc.) are unchanged ---
-    // (Omitted for brevity)
     String rgbHex(Color c) { String.format("%02X%02X%02X", c.red, c.green, c.blue) }
     int cm(double v) { (int) Math.round(v * 567.0) }
     int pt(double v) { (int) Math.round(v * 20.0) }
@@ -322,37 +340,50 @@ class JsonToDocxScript {
     
     void addInlineToParagraph(XWPFParagraph p, String text, boolean isNotes) {
         if (text == null) return
-        text.split('\n').eachWithIndex { line, idx ->
-            if (idx > 0) p.createRun().addBreak()
+        text.split('\n', -1).eachWithIndex { line, idx ->
+            if (idx > 0) p.createRun().addBreak() // Paragraph break
+
             parseLineToStyledSpans(line).each { span ->
                 def (spanText, isBold, isItalic) = span
+                
                 splitTicks(spanText).each { tup ->
                     def (kind, content) = tup
-                    def r = p.createRun()
-                    r.setText(content)
                     
-                    if (p.getStyle() == "ReflectionPara" || p.getStyle() == "KeyPointPara") {
-                        r.setFontFamily(HAND_FONT)
-                        r.setItalic(true)
-                    } else if (p.getStyle() == "Scripture") {
-                        r.setFontFamily(SERIF)
-                        r.setFontSize(12)
-                    } else {
-                        r.setFontFamily(SANS)
-                        r.setFontSize(12)
-                    }
+                    def parts = content.split('\\{soft_break\\}', -1)
+                    
+                    parts.eachWithIndex { part, i ->
+                        def r = p.createRun()
+                        r.setText(part)
+                        
+                        // Apply styles
+                        if (p.getStyle() == "ReflectionPara" || p.getStyle() == "KeyPointPara") {
+                            r.setFontFamily(HAND_FONT)
+                            r.setItalic(true)
+                        } else if (p.getStyle() == "Scripture") {
+                            r.setFontFamily(SERIF)
+                            r.setFontSize(12)
+                        } else {
+                            r.setFontFamily(SANS)
+                            r.setFontSize(12)
+                        }
 
-                    if (isBold) r.setBold(true)
-                    if (isItalic) r.setItalic(true)
-                    
-                    if (kind == "tick-num") {
-                        r.setFontSize(9)
-                        r.setSubscript(VerticalAlign.SUPERSCRIPT)
-                        if (isNotes) r.setColor(rgbHex(NOTES_TEXT))
-                    } else if (kind == "tick-text") {
-                        r.setColor(rgbHex(TICK_BLUE))
-                    } else {
-                        if (isNotes) r.setColor(rgbHex(NOTES_TEXT))
+                        if (isBold) r.setBold(true)
+                        if (isItalic) r.setItalic(true)
+                        
+                        if (kind == "tick-num") {
+                            r.setFontSize(9)
+                            r.setSubscript(VerticalAlign.SUPERSCRIPT)
+                            if (isNotes) r.setColor(rgbHex(NOTES_TEXT))
+                        } else if (kind == "tick-text") {
+                            r.setColor(rgbHex(TICK_BLUE))
+                        } else {
+                            if (isNotes) r.setColor(rgbHex(NOTES_TEXT))
+                        }
+
+                        // Add soft break if not the last part
+                        if (i < parts.size() - 1) {
+                            r.addBreak(BreakType.TEXT_WRAPPING)
+                        }
                     }
                 }
             }
@@ -369,7 +400,7 @@ class JsonToDocxScript {
             def kind = item.type ?: ""
             def content = item.content ?: ""
             
-            content.split('\n').each { line ->
+            content.split('\n', -1).each { line ->
                  def p = cell.addParagraph()
                  if (line.trim().startsWith("###")) {
                      p.setStyle(h4style)

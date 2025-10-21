@@ -47,10 +47,6 @@ class JsonToHtmlScript {
         def parentDir = new File(input).parent
         return new File(parentDir, baseName + ".html").absolutePath
     }
-    
-    // --- All other helper methods from your script ---
-    // (applyInlineMarkers, renderSpread, buildHtml, etc.)
-    // They are identical to your source and are included below for completeness.
 
     boolean isPureVerseNumber(String s) {
         return s?.trim() ==~ /\d{1,3}/
@@ -63,6 +59,7 @@ class JsonToHtmlScript {
                    .replaceAll("&amp;", "&")
                    .replaceAll('&lt;em&gt;', '<em>').replaceAll('&lt;/em&gt;', '</em>')
                    .replaceAll('&lt;strong&gt;', '<strong>').replaceAll('&lt;/strong&gt;', '</strong>')
+                   .replaceAll('&lt;br&gt;', '<br>')
                    .replaceAll(/&lt;(p|span)\s+(class\=)&quot;(.*?)&quot;&gt;/, '<$1 $2\"$3\">')
                    .replaceAll(/&lt;\/(p|span)&gt;/, '</$1>')
     }
@@ -89,28 +86,40 @@ class JsonToHtmlScript {
     }
 
     String applyInlineMarkers(String text) {
-        if (text == null) return ""
-        return text.readLines().collect { line ->
-            String currentLine = line
-
-            // Rule 1: Doubled asterisks (**text**) are always processed first and converted to bold.
-            currentLine = currentLine.replaceAll(/\*\*(.+?)\*\*/) { _, inner -> "<strong>${inner}</strong>" }
-
-            def trimmedLine = currentLine.trim()
-            def startsWithHyphen = trimmedLine.startsWith('-')
-            def singleAsteriskCount = currentLine.count('*')
+        def lines = text.readLines()
+        def result = []
+        for (int i = 0; i < lines.size(); i++) {
+            String current = lines[i]
+            String trimmed = current.trim()
+    
+            // NEW RULE: Single trailing * that should merge with previous leading *
+            if (trimmed.endsWith('*') && trimmed.count('*') == 1 && i > 0) {
+                String prev = lines[i - 1]
+                String prevTrimmed = prev.trim()
+                // check if previous line starts with * and has no other *
+                if (prevTrimmed.startsWith('*') && prevTrimmed.count('*') == 1) {
+                    // combine both lines into one italicized block
+                    String inner = prevTrimmed.substring(1).trim() + "<br>" + trimmed.substring(0, trimmed.length() - 1).trim()
+                    result.remove(result.size() - 1) // remove the previous line's output
+                    result << "<em>${inner}</em>"
+                    continue
+                }
+            }
+    
+            current = current.replaceAll(/\*\*(.+?)\*\*/) { _, inner -> "<strong>${inner}</strong>" }
+    
+            def startsWithHyphen = trimmed.startsWith('-')
+            def singleAsteriskCount = current.count('*')
             boolean hasOddAsterisks = (singleAsteriskCount > 0 && singleAsteriskCount % 2 != 0)
-
+    
             if (startsWithHyphen) {
-                // Rule 3: If a line starts with a hyphen, it becomes a bullet.
-                def lineContent = trimmedLine.substring(1).trim()
+                def lineContent = trimmed.substring(1).trim()
                 lineContent = lineContent.replaceAll(/\*(.+?)\*/) { _, inner -> "<em>${inner}</em>" }
-                lineContent = lineContent.replace('*', '•') // Clean up any stray single asterisks
-                return '<p class="bullet"><span class="b-mark">•</span><span class="b-text">' + lineContent + '</span></p>'
-
+                lineContent = lineContent.replace('*', '•')
+                result << '<p class="bullet"><span class="b-mark">•</span><span class="b-text">' + lineContent + '</span></p>'
+    
             } else if (hasOddAsterisks) {
-                // Rule 2: If a line has an odd number of single asterisks, the first becomes a bullet.
-                def lineContent = currentLine.replaceFirst('\\*', '').trim()
+                def lineContent = current.replaceFirst('\\*', '').trim()
                 def contentBuilder = new StringBuilder()
                 boolean inItalics = false
                 lineContent.each { c ->
@@ -121,16 +130,16 @@ class JsonToHtmlScript {
                         contentBuilder.append(c)
                     }
                 }
-                if (inItalics) contentBuilder.append('</em>') // Close any open italics at the end
-                return '<p class="bullet"><span class="b-mark">•</span><span class="b-text">' + contentBuilder.toString() + '</span></p>'
-
+                if (inItalics) contentBuilder.append('</em>')
+                result << '<p class="bullet"><span class="b-mark">•</span><span class="b-text">' + contentBuilder.toString() + '</span></p>'
+    
             } else {
-                // Default case: Line has an even number of asterisks. They are treated as italic pairs.
-                currentLine = currentLine.replaceAll(/\*(.+?)\*/) { _, inner -> "<em>${inner}</em>" }
-                currentLine = currentLine.replace('*', '•') // Convert any leftover single asterisks
-                return currentLine
+                current = current.replaceAll(/\*(.+?)\*/) { _, inner -> "<em>${inner}</em>" }
+                current = current.replace('*', '•')
+                result << current
             }
-        }.join('\n')
+        }
+        return result.join("\n")
     }
 
     String mdHeadingMinimal(String text, String h4Class = "h4-notes") {
@@ -477,7 +486,7 @@ ${scriptureHtml}
       --notes-bg: #b0c7ff;
       --title-text: #507994;
       --notes-border: #8fb2ff;
-      --notes-text: #ffffff; /* CORRECTED: Was #000000, now white for light theme */
+      --notes-text: #ffffff;
       --definition-bg: #a1bcff;
       --band-bg: #0b3d91;
       --band-text: #ffffff;
