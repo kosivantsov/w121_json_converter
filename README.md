@@ -43,7 +43,7 @@ The packaged installers for macOS, Windows, and Linux are the recommended method
         3.  Scroll down to the security section, where you will find a message about the app being blocked. Click the "Open Anyway" button.
         4.  You can now launch the application.
 
-*   **Windows**: Download the `JsonConverter-Windows.zip` archive. Extract the contents and run the `The Word121 JSON Converter.exe` file.
+*   **Windows**: Download the `JsonConverter-Windows.zip` archive. Extract the contents and run the `The Word121 JSON Converter.exe` file. This is a portable version that doesn't require installation.
     *   **Note**: Windows SmartScreen might block the application. If this happens, click "More info" and then "Run anyway."
 
 *   **Linux**: Download the `JsonConverter-Linux-DEB.zip` archive and extract the contents. Install it on a Debian-based system (e.g., Ubuntu) with `sudo dpkg -i the-word121-json-converter_<version>_amd64.deb`.
