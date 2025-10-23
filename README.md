@@ -30,7 +30,7 @@ This tool was created to provide a simple way to preview and proofread translate
 
 ## Installation
 
-Download the latest assets for your operating system from the [Releases page](httpss://github.com/kosivantsov/w121_json_converter/releases).
+Download the latest assets for your operating system from the [Releases page](https://github.com/kosivantsov/w121_json_converter/releases).
 
 The packaged installers for macOS, Windows, and Linux are the recommended method as they include the required Java runtime and do not require you to have Java installed.
 
@@ -53,7 +53,7 @@ The packaged installers for macOS, Windows, and Linux are the recommended method
 
 If you have Java 17 or newer installed on your system, you can use the cross-platform JAR file.
 
-1.  Download `JsonConverter-<version>.jar.zip` from the Releases page and extract the archive.
+1.  Download `JsonConverter-<version>.jar.zip` from the [Releases page](https://github.com/kosivantsov/w121_json_converter/releases) and extract the archive.
 2.  Launch the resulting `JsonConverter-<version>.jar` file by either double-clicking it or running the following command in your terminal:
 
 ```
